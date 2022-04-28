@@ -1,0 +1,76 @@
+# This file describes the network interfaces available on your system
+# and how to activate them. For more information, see interfaces(5).
+
+source /etc/network/interfaces.d/*
+
+# The loopback network interface
+auto lo
+iface lo inet loopback
+
+# The primary network interface
+auto ens160
+iface ens160 inet static
+	address 10.0.0.98
+	netmask 255.255.255.0
+	network 10.0.0.0
+	broadcast 10.0.0.255
+	gateway 10.0.0.1
+	# dns-* options are implemented by the resolvconf package, if installed
+	dns-nameservers 10.0.0.40 65.210.126.138 65.210.126.139
+	dns-search atglab.verizon.com
+
+; Management Interface
+auto ens160:100
+iface ens160:100 inet static
+	address 10.0.0.100
+        netmask 255.255.255.0
+
+auto ens160:106
+iface ens160:106 inet static
+	address 10.0.0.106
+        netmask 255.255.255.0
+
+auto ens160:130
+iface ens160:130 inet static
+	address 10.0.0.130
+        netmask 255.255.255.0
+
+auto ens160:138
+iface ens160:138 inet static
+        address 10.0.0.138
+        netmask 255.255.255.0
+
+auto ens160:146
+iface ens160:146 inet static
+        address 10.0.0.146
+        netmask 255.255.255.0
+
+auto ens160:154
+iface ens160:154 inet static
+        address 10.0.0.154
+        netmask 255.255.255.0
+
+auto ens160:162
+iface ens160:162 inet static
+        address 10.0.0.162
+        netmask 255.255.255.0
+
+auto ens160:170
+iface ens160:170 inet static
+        address 10.0.0.170
+        netmask 255.255.255.0
+
+auto ens160:194
+iface ens160:194 inet static
+        address 10.0.0.194
+        netmask 255.255.255.0
+
+auto ens160:202
+iface ens160:202 inet static
+        address 10.0.0.202
+        netmask 255.255.255.0
+
+auto ens160:226
+iface ens160:226 inet static
+        address 10.0.0.226
+        netmask 255.255.255.0

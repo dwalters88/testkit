@@ -1,0 +1,23 @@
+{ "valid-tns": [ 
+
+   {"PutRequest": { "Item": { "app": { "S": "all"}, "tn": { "S": "16123066440"}, "authorized": { "BOOL": true }, "name": { "S": "David Cell" } } } },
+   {"PutRequest": { "Item": { "app": { "S": "all"}, "tn": { "S": "17632584535"}, "authorized": { "BOOL": true }, "name": { "S": "David Cell" } } } },
+   {"PutRequest": { "Item": { "app": { "S": "all"}, "tn": { "S": "17038526073"}, "authorized": { "BOOL": true }, "name": { "S": "Kristie Desk" } } } },
+   {"PutRequest": { "Item": { "app": { "S": "all"}, "tn": { "S": "16012590380"}, "authorized": { "BOOL": true }, "name": { "S": "Kristie Cell" } } } },
+   {"PutRequest": { "Item": { "app": { "S": "all"}, "tn": { "S": "19192088695"}, "authorized": { "BOOL": true }, "name": { "S": "Chris Cell" } } } },
+   {"PutRequest": { "Item": { "app": { "S": "all"}, "tn": { "S": "17038879441"}, "authorized": { "BOOL": true }, "name": { "S": "Sanjay Cell" } } } },
+   {"PutRequest": { "Item": { "app": { "S": "all"}, "tn": { "S": "33170737822"}, "authorized": { "BOOL": true }, "name": { "S": "Francoise Desk" } } } },
+   {"PutRequest": { "Item": { "app": { "S": "all"}, "tn": { "S": "33621765116"}, "authorized": { "BOOL": true }, "name": { "S": "Francoise Mobile" }  } } },
+   {"PutRequest": { "Item": { "app": { "S": "all"}, "tn": { "S": "33685928708"}, "authorized": { "BOOL": true }, "name": { "S": "Francoise Mobile 2" } } } },
+   {"PutRequest": { "Item": { "app": { "S": "all"}, "tn": { "S": "19198124516"}, "authorized": { "BOOL": true }, "name": { "S": "Matt Phone " } } } },
+   {"PutRequest": { "Item": { "app": { "S": "all"}, "tn": { "S": "19196199368"}, "authorized": { "BOOL": true }, "name": { "S": "Matt Phone " } } } },
+   {"PutRequest": { "Item": { "app": { "S": "all"}, "tn": { "S": "19196740141"}, "authorized": { "BOOL": true }, "name": { "S": "Matt Phone " } } } },
+   {"PutRequest": { "Item": { "app": { "S": "all"}, "tn": { "S": "16828007069"}, "authorized": { "BOOL": true }, "name": { "S": "Steven Keller Phone " } } } },
+   {"PutRequest": { "Item": { "app": { "S": "all"}, "tn": { "S": "12144384952"}, "authorized": { "BOOL": true }, "name": { "S": "Paul Jabber Phone " } } } },
+   {"PutRequest": { "Item": { "app": { "S": "all"}, "tn": { "S": "18176758998"}, "authorized": { "BOOL": true }, "name": { "S": "Paul Cell Phone " } } } },
+   {"PutRequest": { "Item": { "app": { "S": "tc"}, "tn": { "S": "18573528173"}, "authorized": { "BOOL": true }, "name": { "S": "Parul Cell" } } } },
+   {"PutRequest": { "Item": { "app": { "S": "tc"}, "tn": { "S": "18135577952"}, "authorized": { "BOOL": true }, "name": { "S": "Venkat Cell" } } } },
+   {"PutRequest": { "Item": { "app": { "S": "tc"}, "tn": { "S": "13474819067"}, "authorized": { "BOOL": true }, "name": { "S": "Omar Sancho Cell" } } } },
+   {"PutRequest": { "Item": { "app": { "S": "tc"}, "tn": { "S": "14697882276"}, "authorized": { "BOOL": true }, "name": { "S": "Omar Sancho Jabber"  } } } },
+   {"PutRequest": { "Item": { "app": { "S": "tc"}, "tn": { "S": "19193798096"}, "authorized": { "BOOL": true }, "name": { "S": "Donna Cell" } } } }
+ ] }

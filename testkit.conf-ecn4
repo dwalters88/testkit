@@ -1,0 +1,442 @@
+; testkit.conf
+; Author:  David Walters 2021-01-25
+;
+; History
+; --------;
+; 2021-01-25 	Migration from older Asterisk-FT 
+; 2021-02-17 	Added to the AWS CodeCommit Repository testkit
+;		Added testkit:catch-all
+; 2021-02-21	Adding TestPortal
+; 		Added outbound-test from HD Audio Asterisk
+;TEST NOTE A - Added and synced
+
+; [testkit]
+; --------
+; addheaders
+; dtmf-test
+; dtmfinband-test
+; catch-all ([Soundfile])
+; codeccycle-test
+; echo-test
+; earlymedia-test
+; fallback-test
+; fastanswer-test
+; outbound-test ([Title],[To],[From],[Diversion],[Paid],[EBI],[Codec|List]) => RETURN
+; saycodec => RETURN
+; testportal => RETURN
+; trycodec => RETURN
+; twoway-test
+; validate-caller  (<null>|N|mediafilename,<null>,[0,[0-9]*-9]*)
+
+; Other Utilties
+; --------------
+; backgroup-music
+;    music-loop
+;
+
+[testkit]
+
+; Add Header to the Outbound Call
+exten => addheaders,1,NoOp(addheaders Diversion[${ARG1}] Paid[${ARG2}] using Domain [${ARG3}] and Codecs [${ARG4}])
+ same => n,Set(ARRAY(Diversion,Paid,Domain,Codecs)=${ARG1},${ARG2},${ARG3},${ARG4})
+
+ same => n,Set(Domain=${IF($["${Domain}" = ""]?${DOM}:${Domain})})
+
+ same => n,GotoIf($["${Diversion}" = ""]?skipDiversion)}
+ same => n,set(PJSIP_HEADER(add,Diversion)=<sip:${Diversion}@${Domain}>);\;privacy=off\;reason=unconditional)
+ same => n(skipDiversion),NoOp()
+
+ same => n,GotoIf($["${Paid}" = ""]?skipPAID)}
+ same => n,Set(PJSIP_HEADER(add,P-Asserted-Identity)=<sip:${Paid}@${Domain}>)
+ same => n(skipPAID),NoOp()
+
+ same => n,GotoIf($["${Codecs}" = ""]?skipCODECS)}
+ same => n,Set(CodecsFixed=${REPLACE(Codecs,|,\054)})
+ same => n,Set(PJSIP_MEDIA_OFFER(audio)=!all,${CodecsFixed})
+ same => n(skipCODECS),NoOp()
+
+ ;same => n,NoOp(CALLID = ${CHANNEL(pjsip,call-id)})
+ ;same => n,Set(CDR(callid)=${CHANNEL(pjsip,call-id)})
+
+ same => n,return()
+
+
+; dtmf-test
+exten => dtmf-test,1,NoOp(testkit: dtmf-test)
+ same => n,Ringing()
+ same => n,Answer
+ same => n,Wait(1)
+ same => n,Playback(hello-world)
+ same => n,Read(MyDigits,,0,n,,60)
+ same => n,SayAlpha(${MyDigits})
+ same => n,Echo()
+ same => n,hangup()
+
+; dtmfinband-test
+exten => dtmfinband-test,1,NoOp(testkit: dtmfnband-test)
+ same => n,Ringing()
+ same => n,Answer
+ same => n,Wait(2)
+ same => n,GoSub(testkit,saycodec,1)
+ same => n,Wait(1)
+ same => n,SendDTMF(1)
+ same => n,Wait(1)
+ same => n,SendDTMF(1,,1000)
+ same => n,Playback(moh/manolo_camp-morning_coffee)
+ same => n,hangup()
+
+;catch-all
+exten => catch-all,1,NoOp(testkit:  catch-all (custom sound file ${ARG1})
+ same => n,Set(SOUND=hello-world)
+ same => n,GotoIf($["${ARG1}" = ""]?skipSetSound)}
+ same => n,Set(SOUND=${ARG1})
+ same => n(skipSetSound),NoOp()
+ same => n,Answer()
+ same => n,Progress()
+ same => n,Wait(1)
+ same => n,Playback(${SOUND})
+ same => n,Wait(1)
+ same => n,Echo()
+ same => n,Wait(1)
+ same => n,Hangup()
+
+;codeccycle-test
+exten => codeccycle-test,1,NoOp(testkit:  codeccycle-test)
+ same => n,Playback(custom/dave/codec-test)
+ same => n,Set(MyEndpoint=${CHANNEL(endpoint)})
+ same => n,Set(MyAllow=${PJSIP_ENDPOINT(${MyEndpoint},allow)})
+ same => n,Set(MyAllow=${MyAllow:1:$[${LEN(${MyAllow})} - 2]})
+ same => n,Set(MyCount=${FIELDQTY(MyAllow,|)})
+ same => n(Start),Set(Counter=1)
+ same => n(CLoop),Set(Temp=${CUT(MyAllow,|,${Counter})})
+ same => n,GotoIf($["${MyCount}" < "${Counter}"]?Finish)}
+ same => n,GoSub(testkit,trycodec,1(${Temp},custom/90Speed_DunDunDunV4))
+ same => n,Wait(1)
+ same => n,Set(Counter=$[${Counter} + 1])
+ same => n,Goto(codeccycle-test,CLoop)
+ same => n(Finish),Goto(codeccycle-test,Start)
+
+; echo-test
+exten => echo-test,1,NoOp(testkit: echo-test)
+ same => n,Ringing()
+ same => n,Wait(2)
+ same => n,Answer
+ same => n,Wait(1)
+ same => n,Playback(hello-world)
+ same => n,Echo
+ same => n,Playback(demo-echodone)
+ same => n,Hangup()
+
+;earlymedia-test
+exten => earlymedia-test,1,NoOp(testkit: early-media-test)
+ same => n,Progress()
+ same => n,Wait(5)
+ same => n,Playback(custom/early-media,noanswer)
+ same => n,Answer
+ same => n,Playback(custom/answer-echo-test)
+ same => n,Echo
+ same => n,Playback(demo-echodone)
+ same => n,Hangup()
+
+;fallback-test
+exten => fallback-test,1,NoOp(testkit: fallback-test - g729 then g711)
+ same => n,Ringing()
+ same => n,Wait(3)
+ same => n,Answer()
+ same => n,Wait(1)
+ same => n,SayNumber(1),f)
+ same => n,Playback(hello-world)
+
+ same => n,Set(PJSIP_MEDIA_OFFER(audio)=!all,ulaw)
+ same => n,Set(PJSIP_SEND_SESSION_REFRESH()=invite)
+ same => n,Wait(1)
+ same => n,SayNumber(2),m)
+ same => n,Playback(hello-world)
+
+ same => n,Set(PJSIP_MEDIA_OFFER(audio)=!all,g729)
+ same => n,Set(PJSIP_SEND_SESSION_REFRESH()=invite)
+ same => n,Wait(1)
+ same => n,SayNumber(3),m)
+ same => n,Playback(hello-world)
+
+ same => n,Set(PJSIP_MEDIA_OFFER(audio)=!all,ulaw)
+ same => n,Set(PJSIP_SEND_SESSION_REFRESH()=invite)
+ same => n,Wait(1)
+ same => n,SayNumber(4),f)
+ same => n,Playback(hello-world)
+
+ same => n,Hangup()
+
+; fastanswer-test
+exten => fastanswer-test,1,NoOp(testkit: fastanswer-test - Answer without 18X)
+ same => n,Answer
+ same => n,Wait(1)
+ same => n,Playback(hello-world)
+ same => n,Echo
+ same => n,Playback(demo-echodone)
+ same => n,Hangup()
+
+; outbound-test
+; Gosub(testkit,outbounf-test,1,([Title],[To],[From],[Diversion],[Paid],[EBI],[Codec|List]),Domain)
+exten =>outbound-test,1,NoOp(testkit:  outbound-test ([${ARG1}],[${ARG2}],[${ARG3}],[${ARG4}],[${ARG5}],[${ARG6}],[${ARG7}],[${ARG8}]))
+ same => n,Set(ARRAY(Title,To,From,Diversion,PAID,EBI,CODECS,Domain)=${ARG1},${ARG2},${ARG3},${ARG4},${ARG5},${ARG6},${ARG7},${ARG8})
+ same => n,NoOp(TestOut ([${Title}],[${To}],[${From}],[${Diversion}],[${PAID}],[${EBI}],[${CODECS}],[${Domain}]))
+
+ ; Set Title
+ same => n,Set(Title=${IF($[ "${Title}" = ""]?#:${Title})})
+ same => n,Set(Title=${IF($[ "${Title}" = "#"]?ECN Test(${EXTEN}):${Title})})
+ same => n,Set(Caller=${CALLERID(name)})
+ same => n,set(CALLERID(name)=${Title}-${Caller})
+ same => n,set(CALLERID(num)=${From})
+
+ ; Set correct EBI source, default to LLD
+ ;same => n,Set(EBI=${IF($[ "${EBI}" = ""]?LLD:${EBI})})
+ ;same => n,Set(EBI=${IF($[ ${EBI} = LLD]?USLocLvl-USLLET4EBI1:${EBI})})
+ ;same => n,Set(EBI=${IF($[ ${EBI} = LDO]?USLocLvl-AsteriskEBI1:${EBI})})
+
+ ; Make Call
+ same => n,NoOp(TestOut-PRE-Dial ([${Title}],[${To}],[${From}],[${Diversion}],[${PAID}],[${EBI}],[${CODECS}],[${Domain}]))
+ same => n,Dial(PJSIP/${To}@${EBI},,b(testkit^addheaders^1(${Diversion},${PAID},${Domain},${CODECS})))
+ same => n,Hangup()
+
+; Reject Calls
+; --------------
+exten => **30403,1,GoSub(testkit,reject-403,1)
+exten => **30404,1,GoSub(testkit,reject-404,1)
+exten => **30408,1,GoSub(testkit,reject-408,1)
+exten => **30480,1,GoSub(testkit,reject-480,1)
+exten => **30484,1,GoSub(testkit,reject-484,1)
+exten => **30486,1,GoSub(testkit,reject-486,1)
+exten => **30488,1,GoSub(testkit,reject-488,1)
+exten => **30503,1,GoSub(testkit,reject-503,1)
+exten => **30603,1,GoSub(testkit,reject-603,1)
+exten => **30606,1,GoSub(testkit,reject-606,1)
+exten => _**30XXX,1,GoSub(testkit,reject-503,1)
+
+exten => reject-403,1,hangup(21) ; SIP 403 Forbidden
+exten => reject-404,1,hangup(1)  ; SIP 404 Not Found
+exten => reject-408,1,hangup(18) ; SIP 408 Request Timedout
+exten => reject-410,1,hangup(22) ; SIP 410 Gone
+exten => reject-480,1,hangup(31) ; SIP 480 Temporaraly Unavailable
+exten => reject-484,1,hangup(28) ; SIP 484 Address Incomplete
+exten => reject-486,1,hangup(17) ; SIP 486 Busy Here
+exten => reject-488,1,hangup(65) ; SIP 488 Not Acceptable Here ; For 488 it works to answer call on an endpoint with no Codecs
+exten => reject-501,1,hangup(29) ; SIP 501 Not Implemented
+exten => reject-502,1,hangup(27) ; SIP 502 Bad Gateway
+exten => reject-503,1,hangup(42) ; SIP 503 Service Unavailable
+exten => reject-603,1,hangup(70) ; SIP 603 Decline
+exten => reject-604,1,hangup(70) ;XX SIP 604 Does Not Exist Anywhere
+
+; rna-test - Ring No Answer Test
+exten => rna-test,1,NoOp(testkit:  rna-test - Ring No Answer)
+ same => n,Ringing
+ same => n,Wait(360)
+ same => n,Hangup
+
+exten => saycodec,1,NoOp(testkit:  saycodec)
+ same => n,Set(CMD=asterisk -rx "core show channel ${CHANNEL}")
+ same => n,Set(PATTERN=perl -ne 'print $1 if /NativeFormats: \((.*)\)/')
+ same => n,Set(OUT=${SHELL(${CMD} | ${PATTERN})})
+ same => n,Playback(custom/dave/${OUT})
+ same => n,Return()
+
+; testportal
+;;;;;  NOTE:   ;eventiually replace validate caller in calling code.
+exten => testportal,1,NoOp(testkit: testportal)
+ same => n,Ringing()
+ same => n,Answer
+ same => n,Wait(1)
+ ;Validate Caller
+ same => n,NoOp(CALLERID(num) = ${CALLERID(num)})
+ same => n,GotoIf($["${CALLERID(num)}" = "+16123066440"]?validCaller)}; David Cell
+ same => n,GotoIf($["${CALLERID(num)}" = "+17632584535"]?validCaller)}; David Cell
+ same => n,GotoIf($["${CALLERID(num)}" = "+17038526073"]?validCaller)}; Kristie Desk
+ same => n,GotoIf($["${CALLERID(num)}" = "+16012590380"]?validCaller)}; Kristie Cell
+ same => n,GotoIf($["${CALLERID(num)}" = "+17038526073"]?validCaller)}; Chris Desk
+ same => n,GotoIf($["${CALLERID(num)}" = "+19192088695"]?validCaller)}; Chris Cell
+ same => n,GotoIf($["${CALLERID(num)}" = "+17038879441"]?validCaller)}; Sanjay Cell
+ same => n,GotoIf($["${CALLERID(num)}" = "+17038879441"]?validCaller)}; Sanjay Cell
+ same => n,GotoIf($["${CALLERID(num)}" = "+33170737822"]?validCaller)}; Francoise Desk
+ same => n,GotoIf($["${CALLERID(num)}" = "+33621765116"]?validCaller)}; Francoise Mobile
+ same => n,GotoIf($["${CALLERID(num)}" = "+33685928708"]?validCaller)}; Francoise Mobile 2
+ same => n,GotoIf($["${CALLERID(num)}" = "+19198124516"]?validCaller)}; Matt's Phone 
+ same => n,GotoIf($["${CALLERID(num)}" = "+19196199368"]?validCaller)}; Matt's Phone 
+ same => n,GotoIf($["${CALLERID(num)}" = "+19196740141"]?validCaller)}; Matt's Phone 
+ same => n,GotoIf($["2" = "1"]?validCaller)}
+ same => n,Playback(beeperr)
+ same => n,Playback(beeperr)
+ same => n,Read(MyDigits,,0,n,,60)
+ same => n,NoOp(Reciecved Mydigits = ${MyDIgits})
+ same => n,GotoIf($["${MyDigits}" = "9459"]?validCaller)}
+ same => n,Playback(beeperr)
+ same => n,Playback(beeperr)
+ same => n,hangup()
+ ;Select and Run Test
+ same => n(validCaller),NoOp(Valid Caller)
+ same => n,Return()
+
+; === valid-caller ===
+; Validate caller with poasscodf needed, with passcode if needed
+;    ARG1 CALLERID to check
+;    ARG2 is N for no prompt; blank for default prompt, or the MediaFileName.
+;    ARG3 is the passcode, if blank then use the default below
+;;
+;; NEED TO TEST BEFORE USING
+
+exten => validate-caller,1,NoOP(Tools:Portal CALERID(${ARG1}) WithPrompt(${ARG2}) with PASSCODE(${ARG3}))
+ same => n,Set(CALLER=${ARG1})
+ same => n,Set(PROMPT=${IF($[ "${ARG2}" = ""]?access-code:${ARG2})})
+ same => n,Set(PASSCODE=${IF($[ "${ARG3}" = ""]?9459:${ARG3})})
+
+ ;Pre-Validated Users
+ same => n,GotoIf($["${CALLER}" = "+16123066440"]?validCaller)}; David Cell
+ same => n,GotoIf($["${CALLER}" = "+17632584535"]?validCaller)}; David Cell
+ same => n,GotoIf($["${CALLER}" = "+17038526073"]?validCaller)}; Kristie Desk
+ same => n,GotoIf($["${CALLER}" = "+16012590380"]?validCaller)}; Kristie Cell
+ same => n,GotoIf($["${CALLER}" = "+17038526073"]?validCaller)}; Chris Desk
+ same => n,GotoIf($["${CALLER}" = "+19192088695"]?validCaller)}; Chris Cell
+ same => n,GotoIf($["${CALLER}" = "+17038879441"]?validCaller)}; Sanjay Cell
+ same => n,GotoIf($["${CALLER}" = "+17038879441"]?validCaller)}; Sanjay Cell
+ same => n,GotoIf($["${CALLER}" = "+33170737822"]?validCaller)}; Francoise Desk
+ same => n,GotoIf($["${CALLER}" = "+33621765116"]?validCaller)}; Francoise Mobile
+ same => n,GotoIf($["${CALLER}" = "+33685928708"]?validCaller)}; Francoise Mobile 2
+ same => n,GotoIf($["${CALLER}" = "+19198124516"]?validCaller)}; Matt's Phone 
+ same => n,GotoIf($["${CALLER}" = "+19196199368"]?validCaller)}; Matt's Phone 
+ same => n,GotoIf($["${CALLER}" = "+19196740141"]?validCaller)}; Matt's Phone
+ same => n,GotoIf($["${CALLER}" = "+16828007069"]?validCaller)}; Steven Keller's Phone 
+ same => n,GotoIf($["${CALLER}" = "+12144384952"]?validCaller)}; Paul's Jabber Phone 
+ same => n,GotoIf($["${CALLER}" = "+18176758998"]?validCaller)}; Paul's Cell Phone 
+
+ ;Not Pre-Validated get PassCode)
+ same => n,Playback(beeperr)
+ same => n,GotoIf($["${ARG1}" = "N"]?getDigits)}
+ same => n(playPrompt),Playback(${PROMPT})
+ same => n(getDigits),Read(MyDigits,,0,n,,60)
+ same => n,NoOp(Received MyDigits(${MyDigits}), PASSCODE(${PASSCODE}))
+ same => n,GotoIf($["${MyDigits}" = "${PASSCODE}"]?validCaller)}
+
+ ;Not a valid user hangup
+ same => n,Playback(beeperr)
+ same => n,Playback(beeperr)
+ same => n,hangup()
+ 
+ ;Valid User let them pass
+ same => n(validCaller),NoOp(Valid Caller)
+ same => n,Return(${MyDigits}) ; Pass the passcode they used.
+
+; trycodec
+exten => trycodec,1,NoOp(testkit: trycodec: ${ARG1} play sound: ${ARG2})
+ same => n,Set(CODEC=${ARG1})
+ same => n,Set(SOUND=${ARG2})
+ same => n,Playback(custom/dave/trying)
+ same => n,Playback(custom/dave/${CODEC})
+ same => n,Set(PJSIP_MEDIA_OFFER(audio)=!all,${CODEC})
+ same => n,Set(PJSIP_SEND_SESSION_REFRESH()=invite)
+ same => n,Wait(1)
+ same => n,Set(CMD=asterisk -rx "core show channel ${CHANNEL}")
+ same => n,Set(PATTERN=perl -ne 'print $1 if /NativeFormats: \((.*)\)/')
+ same => n,Set(OUT=${SHELL(${CMD} | ${PATTERN})})
+ same => n,Playback(custom/dave/using)
+ same => n,Playback(custom/dave/${OUT})
+ same => n,Playback(${SOUND})
+ same => n,Echo()
+ same => n,Return()
+
+; twoway-test
+exten => twoway-test,1,NoOp(testkit: twoway-test)
+ same => n,Playback(custom/dave/record-at-the-tone-pound-to-stop)
+ same => n,Record(/tmp/test-${UNIQUEID}.g722,6,30)
+ same => n,Playback(custom/dave/i-recorded)
+ same => n,Playback(/tmp/test-${UNIQUEID})
+ same => n,Wait(1),
+ same => n,Return()
+
+; Music Context
+[background-music]
+; music-loop - Play Media Loop Long Media  * and # exit
+exten => music-loop,1,NoOp(testkit: music-loop) 
+; routine for #, routine for *
+ same => n(Loop),NoOp(Play Music until digit is pressed)
+ same => n,Set(ORIGEXTEN=${EXTEN})
+ same => n,Set(RND=${RAND(1,5)})
+ same => n,GotoIf($["${RND}" == "1"]?Music1)}
+ same => n,GotoIf($["${RND}" == "2"]?Music2)}
+ same => n,GotoIf($["${RND}" == "3"]?Music3)}
+ same => n,GotoIf($["${RND}" == "4"]?Music4)}
+ same => n,GotoIf($["${RND}" == "5"]?Music5)}
+ same => n(Music1),Background(moh/reno_project-system)
+ same => n,Goto(Loop)
+ same => n(Music2),Background(moh/macroform-cold_day)
+ same => n,Goto(Loop)
+ same => n(Music3),Background(moh/macroform-the_simplicity)
+ same => n,Goto(Loop)
+ same => n(Music4),Background(moh/manolo_camp-morning_coffee)
+ same => n,Goto(Loop)
+ same => n(Music5),Background(moh/macroform-robot_dity)
+ same => n,Goto(Loop)
+ same => n,Return()
+
+;; if * run record test
+exten => #,1,NoOp(Record Message and Play it)
+ same => n,Gosub(testkit,twoway-test,1)
+ same => n,Goto(${ORIGEXTEN},Loop)
+
+; if * run Cycle test
+exten => *,1,NoOp(Codec Cycle Test)
+ same => n,Gosub(testkit,codeccycle-test,1)
+ same => n,Goto(${ORIGEXTEN},Loop)
+
+
+;===== Old from Original asterisk-ft commented out there as well ====
+
+;exten => **72,1,NoOp(Outbound with Diversion)
+; same => n,Set(CALLERID(all)=<sip:6123066440@10.0.0.238>)
+; same => n,Set(PJSIP_HEADER(add,Diversion)=<sip:6474750164@10.0.0.238>\;privacy=off\;screen=no\;reason=unconditional)
+; same => n,Dial(PJSIP/7635443885@USCAEntLvl-USCAELEBI1,,wW)
+; same => n,Congestion
+;
+;exten => **72,1,NoOp(Outbound with Diversion)
+; same => n,Set(CALLERID(all)=<sip:6123066440@10.0.0.238>)
+; same => n,Set(PJSIP_HEADER(add,Diversion)=<sip:6474750165@10.0.0.238>\;privacy=off\;screen=no\;reason=unconditional)
+; same => n,Dial(PJSIP/7635443885@USCAEntLvl-USCAELEBI1,,wW)
+; same => n,Congestion
+
+
+;; receive-fax
+;exten => receive-fax,1,NoOP(ReceiveFAX)
+; same => n,Set(FAXOPT(ecm)=no)
+;; same => n,Set(FAXOPT(gateway)=yes)
+;; same => n,Set(FAXOPT(faxdetect)=t38)
+; same => n,Set(tempfax=${STRFTIME(,,%C%y%m%d%H%M)})
+; same => n,Ringing()
+; same => n,Answer()
+; same => n,Wait(6)
+; same => n,ReceiveFAX(/tmp/${tempfax}.tiff,z)
+; same => n,Verbose(3,- Fax receipt completed with status:  ${FAXSTATUS})
+; same => n,GotoIf($["${FAXSTATUS}" == "FAILED"]?end)
+;; same => n,AGI(sendfax.pl,${CALLERID(num)},USCAEntLvl-USCAELEBI1,${EXTEN:2},${tempfax})
+; same => n(end), NoOp(Finished with Faxing)
+
+
+;; (919)379-8730 Hello and Echo test
+;;exten => +19193798730,1,NoOP(ReceiveFAX)
+;exten => +16474750162,1,NoOP(ReceiveFAX)
+; same => n,Set(FAXOPT(ecm)=no)
+;; same => n,Set(FAXOPT(gateway)=yes)
+;; same => n,Set(FAXOPT(faxdetect)=t38)
+; same => n,Set(tempfax=${STRFTIME(,,%C%y%m%d%H%M)})
+; same => n,Ringing()
+; same => n,Answer()
+; same => n,Wait(6)
+; same => n,ReceiveFAX(/tmp/${tempfax}.tiff,z)
+; same => n,Verbose(3,- Fax receipt completed with status:  ${FAXSTATUS})
+; same => n,GotoIf($["${FAXSTATUS}" == "FAILED"]?end)
+;; same => n,AGI(sendfax.pl,${CALLERID(num)},USCAEntLvl-USCAELEBI1,${EXTEN:2},${tempfax})
+; same => n(end), NoOp(Finished with Faxing)
+;
+;exten => send-t38-fax,1,NoOp(Send T38 Fax)
+; same => n,Answer()
+; same => n,Wait(6)
+; same => n,Set(FAXOPT(ecm)=no)
+; same => n,SendFax(/tmp/${tempfax}.tiff,dfzs)
+; same => n,Verbose(3,- Fax receipt completed with status:  ${FAXSTATUS})

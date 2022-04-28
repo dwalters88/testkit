@@ -1,0 +1,98 @@
+;; Test tools for Field Trials
+
+;; (919) 230-6341 G.711u Only [NEEDS WORK]
+;; (919) 230-6342 G.711a Only [NEEDS WORK]
+;; (919) 230-6343 G.729 Only [NEEDS WORK]
+;; (919) 230-6344 G.722 Only [NEEDS WORK]
+;; (919) 230-6345 Fast Answer
+;; (919) 230-6346 DTMF
+;; (919) 230-6347 Early Media
+;; (919) 230-6348 Ring No Answer Test
+;; (919) 230-6349 Echo Test
+
+;; (919) 230-6341 G.711u Only [NEEDS WORK]
+exten => 9192306341,1,NoOp(g.711u Only)
+exten => 9192306341,n,Set(SIP_CODEC=ulaw)
+exten => 9192306341,n,Answer()
+exten => 9192306341,n,Wait(1)
+exten => 9192306341,n,Playback(hello-world)
+exten => 9192306341,n,Wait(1)
+exten => 9192306341,n,Hangup()
+
+;; (919) 230-6342 G.711a Only [NEEDS WORK]
+exten => 9192306342,1,NoOp(g.711a Only)
+exten => 9192306342,n,Set(SIP_CODEC=alaw)
+exten => 9192306342,n,Answer()
+exten => 9192306342,n,Wait(1)
+exten => 9192306342,n,Playback(hello-world)
+exten => 9192306342,n,Wait(1)
+exten => 9192306342,n,Hangup()
+
+
+;; (919) 230-6343 G.729 Only [NEEDS WORK]
+exten => 9192306343,1,NoOp(g.729 Only)
+exten => 9192306343,n,Set(SIP_CODEC=g729)
+exten => 9192306343,n,Answer
+exten => 9192306343,n,Playback(answer-echo-test)
+exten => 9192306343,n,Echo
+exten => 9192306343,n,Playback(demo-echodone)
+exten => 9192306343,n,Hangup()
+
+;; (919) 230-6344 G.722 Only [NEEDS WORK]
+exten => 9192306344,1,NoOp(g.722 Only)
+exten => 9192306344,n,Set(SIP_CODEC=g722)
+exten => 9192306344,n,Answer()
+exten => 9192306344,n,Wait(1)
+exten => 9192306344,n,Playback(hello-world)
+exten => 9192306344,n,Wait(1)
+exten => 9192306344,n,Hangup()
+
+;; (919) 230-6345 Fast Answer
+exten => 9192306345,1,NoOp(Fast Answer)
+exten => 9192306345,n,Answer()
+exten => 9192306345,n,Playback(hello-world)
+exten => 9192306345,n,Wait(1)
+exten => 9192306345,n,Hangup()
+
+;; (919) 230-6346 DTMF
+exten => 9192306346,1,NoOp(DTMF TEST)
+exten => 9192306346,n,Answer
+exten => 9192306346,n,Read(MyDTMF,custom/EnterRequestURI,0,n,,60)
+exten => 9192306346,n,SayAlpha(${MyDTMF})
+exten => 9192306346,n,hangup
+
+;; (919) 230-6347 Early Media
+exten => 9192306347,1,NoOp(Early Media)
+exten => 9192306347,n,Progress()
+exten => 9192306347,n,Wait(5)
+exten => 9192306347,n,Playback(early-media,noanswer)
+exten => 9192306347,n,Answer
+exten => 9192306347,n,Playback(answer-echo-test)
+exten => 9192306347,n,Echo
+exten => 9192306347,n,Playback(demo-echodone)
+exten => 9192306347,n,Hangup()
+
+;; (919) 230-6348 Ring No Answer Test
+exten => 9192306348,1,NoOp(Ring No Answer)
+exten => 9192306348,n,Ringing
+exten => 9192306348,n,Wait(360)
+exten => 9192306348,n,Hangup
+
+;; (919) 230-6349 Echo Test
+exten => 9192306349,1,NoOp(Echo Test)
+exten => 9192306349,n,Ringing()
+exten => 9192306349,n,Wait(1)
+exten => 9192306349,n,Answer
+exten => 9192306349,n,Playback(answer-echo-test)
+exten => 9192306349,n,Echo
+exten => 9192306349,n,Playback(demo-echodone)
+exten => 9192306349,n,Hangup()
+
+;; (919) 230-6350 Recieve Fax
+exten => 9192306350,1,NoOp(Recieve Fax)
+exten => 9192306350,n,Busy()
+exten => 9192306350,n,Hangup()
+;exten => 9192306350,n,rxfax(/tmp/myFAX.tif)
+
+
+

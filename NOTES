@@ -1,0 +1,15 @@
+
+Git Notes
+=========
+Show the current repository and local branch status
+	git status
+Show all the differences between a local branch and repository
+	git fetch
+	git diff master origin
+        -or- git diff --name-only master origin
+Bring the local branch up to date with the remote repository
+	git pull
+Update the Cloud Repository
+	git add file
+	git commit -m "notes"
+ 	git push	

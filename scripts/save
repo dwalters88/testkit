@@ -1,0 +1,31 @@
+#!/bin/bash
+
+# /etc/asterisk/save - script to save current changed files.  (if not usin git or something else.)
+# David Walters - 2020
+
+if [[ $# -eq 0 ]]
+then
+  note="save"
+elif [[ $# -eq 1 ]]
+then
+  note=$1
+else
+  echo "Either no argument or just one argument."
+  exit
+fi
+
+DIR=/etc/asterisk
+ARCH=$DIR/+archive
+DT=`date +%G%m%dT%H%M%S`
+
+LIST="save pjsip.conf pjsip_wizard.conf extensions.conf modules.conf"
+
+for file in $LIST; do
+   if ! cmp $DIR/$file $ARCH/$file > /dev/null 2>&1
+   then
+	echo Copying $DIR/$file as it is different than $ARCH/$file
+	cp $DIR/$file $ARCH/$file-$DT-$note
+	cp $DIR/$file $ARCH/$file
+   fi
+done
+

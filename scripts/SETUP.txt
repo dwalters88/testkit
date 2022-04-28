@@ -1,0 +1,8 @@
+# Setup File
+
+ln -s /etc/asterisk/testkit/sounds_custom /var/lib/asterisk/sounds/custom
+ln -s /var/lib/asterisk/moh /var/lib/asterisk/sounds
+ln -s /etc/asterisk/testkit/scripts/save /etc/asterisk/
+ln -s /etc/asterisk/testkit/agi-bin /var/lib/asterisk/agi-bin
+mkdir -p /etc/asterisk/+archive
+

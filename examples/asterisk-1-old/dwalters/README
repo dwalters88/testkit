@@ -1,0 +1,378 @@
+
+Digium G.729 Software Codec for Asterisk README for Version 3.1.x modules
+==============================================================================
+
+  Digium offers a software implementation of G.729 that is compatible with
+  Asterisk and is properly licensed from the intellectual property rights and
+  patent holders. Please visit the following web address to read more about
+  this product and to purchase license keys:
+
+  http://store.digium.com/productview.php?product_code=G729CODEC
+
+  Follow the instructions below to download and install the Digium G.729
+  Software Codec for Asterisk.
+
+
+
+==[ Installation Overview ]===================================================
+
+  Once you have a G.729 license key, there are four primary tasks to perform
+  in order to install the G.729 software codec.
+
+      1)  Download and execute the 'register' utility to generate a valid
+          license.
+
+      2)  Download and execute the 'benchg729' utility to determine the
+          optimum build.
+
+      3)  Use the 'G.729 Selector' web utility to determine the recommended
+          G.729 codec binary download package.
+
+      4)  Download and install the 'codec_g729' binary that is built for your
+          platform.
+
+  The steps to complete these tasks are described in the Installation
+  Procedure section.
+
+  The register utility may be downloaded from:
+  http://downloads.digium.com/pub/register
+
+  The benchg729 utility may be downloaded from:
+  http://downloads.digium.com/pub/telephony/codec_g729/benchg729
+
+  The G.729 Selector may be viewed from:
+  http://www.digium.com/en/docs/G729/g729-download.php
+
+  The G.729 codec binary may be downloaded from:
+  http://downloads.digium.com/pub/telephony/codec_g729
+
+  Notes:
+
+  - Supported software builds are provided for 32-bit and 64-bit x86
+    platforms, and are optimized for a variety of processor types. Choose the
+    directory that closest matches your Asterisk version and processor
+    type. Each of these directories contains codec TAR files which include
+    the G.729 codec binary for each type of supported processor.
+
+  - The register utility and G.729 codec binaries for additional processor
+    types and operating systems may be found in the unsupported directory.
+
+
+
+==[ Installation Procedure ]==================================================
+
+1)  Download and execute the register utility to generate a valid license.
+
+1.1)  Download the register utility to the root home directory of your
+      Asterisk server. First, log in as the user "root".
+
+      Command-line Example for 32-bit Linux:
+
+        # cd /root
+        # wget http://downloads.digium.com/pub/register/x86-32/register
+
+1.2)  Change the permissions of the /root/register file to r-x------.
+
+      Command-line Example:
+
+        # chmod 500 /root/register
+
+1.3)  Run the register utility and follow the interactive instructions. The
+      registration utility will prompt you for your G.729 license key.
+
+      Command-line Example:
+
+        # /root/register
+
+      Notes:
+
+      - Internet access is required from your Asterisk server in order to
+        register your G.729 key for licensed use. Outgoing network traffic to
+        TCP port 443 (SSL) must be allowed in order for the register utility
+        to successfully communicate with Digium's license server and complete
+        the registration process.
+
+
+2)  Download and execute the benchg729 utility to determine the optimum build.
+
+    There are various optimized versions of the G.729 codec binary available
+    for different CPU types in both x86-32 and x86-64 architectures. To
+    determine which build of the module performs best on your system, the
+    benchg729 utility will run a series of tests, and report which codec
+    module will maximize encoding performance on your system.
+
+    NOTE: Using the x86-32 version on an x86-64 system may return useless
+    results. Be sure to select the proper version for your architecture.
+
+2.1)  Download the benchg729 utility to the root home directory of your
+      Asterisk server.
+
+      Command-line Example for 32-bit Linux:
+
+        # cd /root
+        # wget http://downloads.digium.com/pub/telephony/codec_g729/\
+          benchg729/x86-32/benchg729
+
+2.2)  Change the permissions of the /root/benchg729 file to r-x------.
+
+      Command-line Example:
+
+        # chmod 500 /root/benchg729
+
+2.3)  Run the benchg729 utility and record the build that it recommends should
+      be used for your platform.
+
+      Command-line Example:
+
+        # /root/benchg729
+
+
+3)  Use the 'G.729 Selector' web utility to determine the recommended G.729
+    codec binary download package.
+
+    Depending upon your version of Asterisk and processor architecture,
+    different G.729 codec binaries are recommended for the use of G.729.
+    Digium provides a G.729 Selector web utility in order to assist with
+    choosing the correct G.729 codec binary. The G.729 Selector web utility
+    should be viewed with a standard web browser and may be accessed via the
+    following URL:
+
+    http://www.digium.com/en/docs/G729/g729-download.php
+
+    The file that the G.729 Selector web utility informs you is recommended
+    for your platform should be the file that you use in place of the examples
+    provided in step 4 of this section.
+
+
+4)  Download and install the codec_g729 binary that is built for your
+    platform.
+
+    There are different versions of the G.729 codec binary for various
+    Asterisk releases:  There are two versions for Asterisk 1.8.x point
+    releases (one for 1.8.0 through 1.8.3, another for 1.8.4 and following);
+    there is a single version for 10.x (10.0) and a single version for 11.x
+    (11.0). Take note that these modules are *not* loadable in prior releases
+    of Asterisk, and will only load in the specific version for which they are
+    designed. Be sure that you download the correct version of the G.729
+    codec binary for your Asterisk version, as recommended by the G.729
+    Selector web utility in step 3.
+
+    In addition, updated builds of the G.729 codec binary are frequently
+    released. Each build has a 'version number'. This version number is part
+    of the filename, and is also included in the copyright/license message
+    that is displayed when the module is loaded into Asterisk. In this
+    document, build number '3.1.2' has been used as an example. Keep in mind
+    that the current build number may be newer when you read this document.
+
+4.1)  Download G.729 to the root home directory of your Asterisk server,
+      replacing 'pentium4m' in the example with the recommended build and
+      '_32' in the example with your CPU architecture.
+
+      Command-line Example for 32-bit Linux:
+
+        # cd /root
+        # wget http://downloads.digium.com/pub/telephony/codec_g729/\
+          asterisk-1.8.4/x86-32/codec_g729a-1.8.4_3.1.5-pentium4m_32.tar.gz
+
+4.2)  Expand the codec_g729 archive and copy the codec_g729a.so file to the 
+      /usr/lib/asterisk/modules directory.
+
+      Command-line Example for 32-bit Linux:
+
+        # tar xzvf codec_g729a-1.8.4_3.1.5-pentium4m_32.tar.gz
+        # cp /root/codec_g729a-1.8.4_3.1.5-pentium4m/codec_g729a.so /usr/lib\
+          /asterisk/modules
+
+4.3)  The G.729 codec binary must be loaded in order to initialize your new
+      G.729 licensed channels. (See General Notes to use multiple licenses on
+      one server.)
+
+      Command-line Example for new installs:
+
+        # asterisk -rx "module load codec_g729a.so"
+
+      Command-line Example for a codec_g729 upgrade:
+
+        # asterisk -rx "module reload codec_g729a.so"
+
+4.4)  Verify that the number of G.729 licensed channels available to Asterisk
+      matches the number of G.729 licensed channels that you purchased. This
+      can be verified by issuing "g729 show licenses" in the Asterisk CLI.
+      Take into consideration any previous G.729 licensed channels that you
+      had already registered to your Asterisk server before verifying this
+      number.
+
+      Command-line Example:
+
+        # asterisk -rvvv
+        *CLI> g729 show licenses
+        0/0 encoders/decoders of 26 licensed channels are currently in use
+
+        Licenses Found:
+        Key: G729-EXAMPLE1 -- Host-ID: ex:am:pl:e0:ex:am:pl:e0:ex:am:pl:e0:ex:
+        am:pl:e0:ex:am:pl:e0 -- Channels: 2 (Expires: 2026-09-26) (OK)
+        Key: G729-EXAMPLE2 -- Host-ID: ex:am:pl:e0:ex:am:pl:e0:ex:am:pl:e0:ex:
+        am:pl:e0:ex:am:pl:e0 -- Channels: 24 (Expires: 2026-09-26) (OK)
+
+
+5)  Copy the generated license files to a safe place as described in the
+    Backup Procedure section.
+
+
+
+==[ Backup Procedure ]========================================================
+
+  It is extremely important that you backup all of the files located in the
+  /var/lib/asterisk/licenses directory. This directory contains the Host-ID
+  specific license files for your system. These license files are tied to the
+  MAC address of all the ethernet devices installed in your system. Creating a
+  backup of this directory will allow you to restore your G.729 license file
+  in case you need to reinstall your operating system. This will help prevent
+  the need to contact Digium to request authorization to increment your G.729
+  key and from needing to purchase a new G.729 key if you exceed the maximum
+  number of G.729 key increments allowed.
+
+
+
+==[ General Notes ]===========================================================
+
+  -  Multiple G.729 keys may be registered to the same Asterisk server. This
+     will allow you to increase the total number of available G.729 licensed
+     channels on your Asterisk server. New G.729 keys may be registered to
+     your Asterisk server using the same instructions provided in the
+     Installation Procedure section. There will be an additional G.729 license
+     file generated in the /var/lib/asterisk/licenses directory for each G.729
+     key that is successfully registered to your Asterisk server. It is
+     extremely important that you follow the instructions provided in Backup
+     Procedure section whenever a new G.729 key is successfully registered to
+     your Asterisk server.
+
+  -  A G.729 key must be re-registered if any of the Ethernet devices in your
+     Asterisk server are changed, added, or removed. The unique G.729 license
+     file which is located in your /var/lib/asterisk/licenses directory is
+     tied to the MAC address of all the Ethernet devices installed in your
+     system. A G.729 key can only be re-registered once without authorization
+     from Digium. Digium must be contacted by phone in order to request
+     authorization to have your G.729 key incremented. Digium reserves the
+     right to deny authorization for having a G.729 key incremented.
+
+  -  The silence suppression feature is not available using the codec_g729a.so
+     file. Asterisk will generate output similar to "Dropping extra frame of
+     G.729 since we already have a VAD frame at the end" if the remote end is
+     attempting to use silence suppression with G.729. Consult with the remote
+     end to ensure that silence suppression is not being used. You may have
+     problems using G.729 if the remote end attempts to use silence
+     suppression.
+
+  -  It is not required or suggested to specify a load line in the
+     /etc/asterisk/modules.conf for the codec_g729a.so file. Asterisk will
+     automatically load it using the autoload option. The autoload option is
+     set on by default.
+
+
+
+==[ Asterisk CLI Commands ]===================================================
+
+  The G.729 codec binary provides the following Asterisk CLI commands:
+
+  "g729 show hostid"
+  "g729 show licenses"
+  "g729 show version"
+
+  These are explained in greater detail below.
+  
+  -  Issuing "g729 show hostid" on the Asterisk CLI will display the system's
+     Host-ID.
+
+     Command-line Example:
+
+       # asterisk -rvvv
+       *CLI> g729 show hostid
+       Host-ID: ex:am:pl:e0:ex:am:pl:e0:ex:am:pl:e0:ex:am:pl:e0:ex:am:pl:e0
+
+  -  Issuing "g729 show licenses" on the Asterisk CLI will display all G.729
+     licenses and their utilization.
+
+     Command-line Example:
+
+       # asterisk -rvvv
+       *CLI> g729 show licenses
+       0/0 encoders/decoders of 26 licensed channels are currently in use
+
+       Licenses Found:
+       Key: G729-EXAMPLE1 -- Host-ID: ex:am:pl:e0:ex:am:pl:e0:ex:am:pl:e0:ex:a
+       m:pl:e0:ex:am:pl:e0 -- Channels: 2 (Expires: 2026-09-26) (OK)
+       Key: G729-EXAMPLE2 -- Host-ID: ex:am:pl:e0:ex:am:pl:e0:ex:am:pl:e0:ex:a
+       m:pl:e0:ex:am:pl:e0 -- Channels: 24 (Expires: 2026-09-26) (OK)
+
+  -  Issuing "g729 show version" on the Asterisk CLI will display the G.729
+     codec binary version.
+
+     Command-line Example:
+
+       # asterisk -rvvv
+       *CLI> g729 show version
+       Digium G.729A Module Version 1.8.4_3.1.5 (optimized for pentium4m_32)
+
+
+
+==[ AMI Actions ]=============================================================
+
+  The G.729 codec binary provides the following AMI actions:
+
+  "G729LicenseList"
+  "G729LicenseStatus"
+
+  These are explained in greater detail below.
+
+  -  Issuing the "G729LicenseList" AMI action will display all G.729 licenses
+     and their loading status.
+
+     AMI Example:
+
+       Action: G729LicenseList
+
+       Response: Success
+       Message: License list will follow
+
+       Event: G729License
+       Key: G729-EXAMPLE1
+       Host-ID: ex:am:pl:e0:ex:am:pl:e0:ex:am:pl:e0:ex:am:pl:e0:ex:am:pl:e0
+       Channels: 2
+       ExpDate: 2026-09-26
+       Status: OK
+
+       Event: G729License
+       Key: G729-EXAMPLE2
+       Host-ID: ex:am:pl:e0:ex:am:pl:e0:ex:am:pl:e0:ex:am:pl:e0:ex:am:pl:e0
+       Channels: 24
+       ExpDate: 2026-09-26
+       Status: OK
+
+       Event: G729LicenseList complete
+
+  -  Issuing the "G729LicenseStatus" AMI action will display G.729 license
+     utilization.
+
+     AMI Example:
+
+       Action: G729LicenseStatus
+
+       Response: Success
+       ChannelsLicensed: 26
+       EncodersInUse: 0
+       DecodersInUse: 0
+
+
+
+==[ Technical Support ]=======================================================
+
+For more help, please visit the G.729 category of the Digium Knowledgebase:
+http://kb.digium.com/?CategoryID=30
+
+If you have any questions or concerns, contact Digium Technical Support by
+phone, either toll-free within the US at 1.877.DIGIUM.1(1.877.344.4861) or
+directly at +1.256.428.6000.  You may also contact Digium Technical Support by
+visiting http://www.digium.com/support.
+
+==============================================================================

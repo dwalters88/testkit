@@ -1,0 +1,180 @@
+ROUTE(8)                                           Linux Programmer's Manual                                          ROUTE(8)
+
+NNAAMMEE
+       route - show / manipulate the IP routing table
+
+SSYYNNOOPPSSIISS
+       rroouuttee [--CCFFvvnneeee]
+
+       rroouuttee  [--vv]  [--AA  family]  aadddd [--nneett|--hhoosstt] target [nneettmmaasskk Nm] [ggww Gw] [mmeettrriicc N] [mmssss M] [wwiinnddooww W] [iirrtttt I] [rreejjeecctt]
+              [mmoodd] [ddyynn] [rreeiinnssttaattee] [[ddeevv] If]
+
+       rroouuttee  [--vv] [--AA family] ddeell [--nneett|--hhoosstt] target [ggww Gw] [nneettmmaasskk Nm] [mmeettrriicc N] [[ddeevv] If]
+
+       rroouuttee  [--VV] [----vveerrssiioonn] [--hh] [----hheellpp]
+
+DDEESSCCRRIIPPTTIIOONN
+       RRoouuttee manipulates the kernel's IP routing tables.  Its primary use is to set up static routes to specific hosts or net‐
+       works via an interface after it has been configured with the iiffccoonnffiigg(8) program.
+
+       When  the  aadddd  or  ddeell options are used, rroouuttee modifies the routing tables.  Without these options, rroouuttee displays the
+       current contents of the routing tables.
+
+OOPPTTIIOONNSS
+       --AA ffaammiillyy
+              use the specified address family (eg `inet'; use `route --help' for a full list).
+
+       --FF     operate on the kernel's FIB (Forwarding Information Base) routing table.  This is the default.
+
+       --CC     operate on the kernel's routing cache.
+
+       --vv     select verbose operation.
+
+       --nn     show numerical addresses instead of trying to determine symbolic host names. This is useful if you are trying to
+              determine why the route to your nameserver has vanished.
+
+       --ee     use  nneettssttaatt(8)-format for displaying the routing table.  --eeee will generate a very long line with all parameters
+              from the routing table.
+
+       ddeell    delete a route.
+
+       aadddd    add a new route.
+
+       ttaarrggeett the destination network or host. You can provide IP addresses in dotted decimal or host/network names.
+
+       --nneett   the ttaarrggeett is a network.
+
+       --hhoosstt  the ttaarrggeett is a host.
+
+       nneettmmaasskk NNMM
+              when adding a network route, the netmask to be used.
+
+       ggww GGWW  route packets via a gateway.  NNOOTTEE:: The specified gateway must be reachable first. This usually means  that  you
+              have  to set up a static route to the gateway beforehand. If you specify the address of one of your local inter‐
+              faces, it will be used to decide about the interface to which the packets should be routed to. This is a  BSDism
+              compatibility hack.
+
+       mmeettrriicc MM
+              set the metric field in the routing table (used by routing daemons) to M.
+
+       mmssss MM  set  the  TCP  Maximum Segment Size (MSS) for connections over this route to M bytes.  The default is the device
+              MTU minus headers, or a lower MTU when path mtu discovery occurred. This setting can be used  to  force  smaller
+              TCP  packets  on the other end when path mtu discovery does not work (usually because of misconfigured firewalls
+              that block ICMP Fragmentation Needed)
+
+       wwiinnddooww WW
+              set the TCP window size for connections over this route to W bytes. This is typically only used  on  AX.25  net‐
+              works and with drivers unable to handle back to back frames.
+
+       iirrtttt II set  the initial round trip time (irtt) for TCP connections over this route to I milliseconds (1-12000). This is
+              typically only used on AX.25 networks. If omitted the RFC 1122 default of 300ms is used.
+
+       rreejjeecctt install a blocking route, which will force a route lookup to fail.  This is for example used to  mask  out  net‐
+              works before using the default route.  This is NOT for firewalling.
+
+       mmoodd,, ddyynn,, rreeiinnssttaattee
+              install  a  dynamic  or  modified  route. These flags are for diagnostic purposes, and are generally only set by
+              routing daemons.
+
+       ddeevv IIff force the route to be associated with the specified device, as the kernel will otherwise try  to  determine  the
+              device  on  its own (by checking already existing routes and device specifications, and where the route is added
+              to). In most normal networks you won't need this.
+
+              If ddeevv IIff is the last option on the command line, the word ddeevv may be omitted, as it's  the  default.  Otherwise
+              the order of the route modifiers (metric - netmask - gw - dev) doesn't matter.
+
+EEXXAAMMPPLLEESS
+       rroouuttee aadddd --nneett 112277..00..00..00 nneettmmaasskk 225555..00..00..00 ddeevv lloo
+              adds  the  normal  loopback  entry,  using  netmask 255.0.0.0 and associated with the "lo" device (assuming this
+              device was previously set up correctly with iiffccoonnffiigg(8)).
+
+       rroouuttee aadddd --nneett 119922..5566..7766..00 nneettmmaasskk 225555..225555..225555..00 ddeevv eetthh00
+              adds a route to the local network 192.56.76.x via "eth0".  The word "dev" can be omitted here.
+
+       rroouuttee ddeell ddeeffaauulltt
+              deletes the current default route, which is labeled "default" or 0.0.0.0 in the destination field of the current
+              routing table.
+
+       rroouuttee aadddd ddeeffaauulltt ggww mmaannggoo--ggww
+              adds a default route (which will be used if no other route matches).  All packets using this route will be gate‐
+              wayed through "mango-gw". The device which will actually be used for that route depends  on  how  we  can  reach
+              "mango-gw" - the static route to "mango-gw" will have to be set up before.
+
+       rroouuttee aadddd iippxx44 ssll00
+              Adds the route to the "ipx4" host via the SLIP interface (assuming that "ipx4" is the SLIP host).
+
+       rroouuttee aadddd --nneett 119922..5577..6666..00 nneettmmaasskk 225555..225555..225555..00 ggww iippxx44
+              This command adds the net "192.57.66.x" to be gatewayed through the former route to the SLIP interface.
+
+       rroouuttee aadddd --nneett 222244..00..00..00 nneettmmaasskk 224400..00..00..00 ddeevv eetthh00
+              This  is  an  obscure  one  documented  so people know how to do it. This sets all of the class D (multicast) IP
+              routes to go via "eth0". This is the correct normal configuration line with a multicasting kernel.
+
+       rroouuttee aadddd --nneett 1100..00..00..00 nneettmmaasskk 225555..00..00..00 rreejjeecctt
+              This installs a rejecting route for the private network "10.x.x.x."
+
+OOUUTTPPUUTT
+       The output of the kernel routing table is organized in the following columns
+
+       DDeessttiinnaattiioonn
+              The destination network or destination host.
+
+       GGaatteewwaayy
+              The gateway address or '*' if none set.
+
+       GGeennmmaasskk
+              The netmask for the destination net; '255.255.255.255' for a host destination  and  '0.0.0.0'  for  the  ddeeffaauulltt
+              route.
+
+       FFllaaggss  Possible flags include
+              UU (route is uupp)
+              HH (target is a hhoosstt)
+              GG (use ggaatteewwaayy)
+              RR (rreeiinnssttaattee route for dynamic routing)
+              DD (ddyynnaammiiccaallllyy installed by daemon or redirect)
+              MM (mmooddiiffiieedd from routing daemon or redirect)
+              AA (installed by aaddddrrccoonnff)
+              CC (ccaacchhee entry)
+              !!  (rreejjeecctt route)
+
+       MMeettrriicc The  'distance'  to the target (usually counted in hops). It is not used by recent kernels, but may be needed by
+              routing daemons.
+
+       RReeff    Number of references to this route. (Not used in the Linux kernel.)
+
+       UUssee    Count of lookups for the route.  Depending on the use of -F and -C this will be either route cache  misses  (-F)
+              or hits (-C).
+
+       IIffaaccee  Interface to which packets for this route will be sent.
+
+       MMSSSS    Default maximum segment size for TCP connections over this route.
+
+       WWiinnddooww Default window size for TCP connections over this route.
+
+       iirrtttt   Initial  RTT  (Round  Trip  Time).  The kernel uses this to guess about the best TCP protocol parameters without
+              waiting on (possibly slow) answers.
+
+       HHHH ((ccaacchheedd oonnllyy))
+              The number of ARP entries and cached routes that refer to the hardware header cache for the cached  route.  This
+              will be -1 if a hardware address is not needed for the interface of the cached route (e.g. lo).
+
+       AArrpp ((ccaacchheedd oonnllyy))
+              Whether or not the hardware address for the cached route is up to date.
+
+FFIILLEESS
+       _/_p_r_o_c_/_n_e_t_/_i_p_v_6___r_o_u_t_e
+       _/_p_r_o_c_/_n_e_t_/_r_o_u_t_e
+       _/_p_r_o_c_/_n_e_t_/_r_t___c_a_c_h_e
+
+SSEEEE AALLSSOO
+       _i_f_c_o_n_f_i_g_(_8_)_, _n_e_t_s_t_a_t_(_8_)_, _a_r_p_(_8_)_, _r_a_r_p_(_8_)
+
+HHIISSTTOORRYY
+       RRoouuttee  for  Linux  was  originally  written  by  Fred N.  van Kempen, <waltje@uwalt.nl.mugnet.org> and then modified by
+       Johannes Stille and Linus Torvalds for pl15. Alan Cox added the mss and window options for Linux 1.1.22.  irtt  support
+       and merged with netstat from Bernd Eckenfels.
+
+AAUUTTHHOORR
+       Currently maintained by Phil Blundell <Philip.Blundell@pobox.com> and Bernd Eckenfels <net-tools@lina.inka.de>.
+
+net-tools                                                 2007-12-02                                                  ROUTE(8)

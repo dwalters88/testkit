@@ -1,0 +1,48 @@
+; Record Message
+; --------------
+;    For recording a prompt.  Once you call this number Asterisk
+;    will create a file in /usr/share/asterisk/sounds/custom/
+;    Simply rename the file for your applicaiton
+exten => **11,1,Answer()
+exten => **11,n,Wait(2)
+exten => **11,n,Record(custom/new_recording.gsm)
+exten => **11,n,Wait(2)
+exten => **11,n,Playback(custom/new_recording)
+exten => **11,n,Hangup()
+
+; Dial number prompted for To, From, Diversion, PAID
+;
+exten => **50,1,NoOp(Prompt for To,From,Diversion,PAID)
+
+exten => **50,n(GetRURI),Playback(custom/EnterRequestURI)}
+exten => **50,n,Read(MyRURI,,0,n,,60)
+exten => **50,n,GotoIf($["${MyRURI:-1:1}" == "*" ]?GetRURI)
+;exten => **50,n,SayDigits(${MyRURI})
+
+;exten => **50,n(GetFrom),Playback(custom/EnterFrom)}
+exten => **50,n(GetFrom),Read(MyFrom,custom/EnterFrom,0,n,,60)
+exten => **50,n,GotoIf($["${MyFrom:-1:1}" == "*" ]?GetFrom)
+exten => **50,n,GotoIf($[${LEN(${MyFrom})} = 0]?SkipFrom)
+;exten => **50,n,SayDigits(${MyFrom})
+exten => **50,n,Set(CALLERID(num)=${MyFrom})
+exten => **50,n(SkipFrom),NoOp()
+
+;exten => **50,n(GetDiversion),Playback(custom/EnterDiversion)
+exten => **50,n(GetDiversion),Read(MyDiversion,custom/EnterDiversion,0,n,,60)
+exten => **50,n,GotoIf($["${MyDiversion:-1:1}" = "*" ]?GetDiversion)
+exten => **50,n,GotoIf($[${LEN(${MyDiversion})} = 0]?SkipDiversion)
+;exten => **50,n,SayDigits(${MyDiversion})
+exten => **50,n,SIPAddHeader("Diversion:  <sip:${MyDiversion}@10.0.0.98>\;privacy=off\;reason=unconditional")
+exten => **50,n(SkipDiversion),NoOp()
+
+;exten => **50,n(GetPAID),Playback(custom/EnterPAID)
+exten => **50,n(GetPAID),Read(MyPAID,custom/EnterPAID,0,n,,60)
+exten => **50,n,GotoIf($["${MyPAID:-1:1}" = "*" ]?GetPAID)
+exten => **50,n,GotoIf($[${LEN(${MyPAID})} = 0]?SkipPAID)
+;exten => **50,n,SayDigits(${MyPAID})
+exten => **50,n,NoOp(${MyPAID})
+exten => **50,n,SIPAddHeader("P-Asserted-ID:  <sip:${MyPAID}@10.0.0.98>")
+exten => **50,n(SkipPAID),NoOp()
+
+exten => **50,n,Dial(Sip/${MyRURI}@VerizonTSO_SBC1,,wW)
+exten => **50,n,Congestion
