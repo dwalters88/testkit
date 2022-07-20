@@ -1,0 +1,268 @@
+; extensions.conf - the Asterisk dial plan
+;
+[general]
+static=yes
+writeprotect=no
+clearglobalvars=no
+[globals]
+
+[stdexten]
+;
+; Standard extension subroutine:
+;   ${EXTEN} - Extension
+;   ${ARG1} - Device(s) to ring
+;   ${ARG2} - Optional context in Voicemail
+;
+; Note that the current version will drop through to the next priority in the
+; case of their pressing '#'.  This gives more flexibility in what do to next:
+; you can prompt for a new extension, or drop the call, or send them to a
+; general delivery mailbox, or...
+;
+; The use of the LOCAL() function is purely for EBI.  Any variable
+; initially declared as LOCAL() will disappear when the innermost Gosub context
+; in which it was declared returns.  Note also that you can declare a LOCAL()
+; variable on top of an existing variable, and its value will revert to its
+; previous value (before being declared as LOCAL()) upon Return.
+;
+exten => _X.,50000(stdexten),NoOp(Start stdexten)
+exten => _X.,n,Set(LOCAL(ext)=${EXTEN})
+exten => _X.,n,Set(LOCAL(dev)=${ARG1})
+exten => _X.,n,Set(LOCAL(cntx)=${ARG2})
+exten => _X.,n,Set(LOCAL(mbx)=${ext}${IF($[!${ISNULL(${cntx})}]?@${cntx})})
+exten => _X.,n,Dial(${dev},20)				; Ring the interface, 20 seconds maximum
+exten => _X.,n,Goto(stdexten-${DIALSTATUS},1)		; Jump based on status (NOANSWER,BUSY,CHANUNAVAIL,CONGESTION,ANSWER)
+
+exten => stdexten-NOANSWER,1,VoiceMail(${mbx},u)	; If unavailable, send to voicemail w/ unavail announce
+exten => stdexten-NOANSWER,n,Return()			; If they press #, return to start
+
+exten => stdexten-BUSY,1,VoiceMail(${mbx},b)		; If busy, send to voicemail w/ busy announce
+exten => stdexten-BUSY,n,Return()			; If they press #, return to start
+
+exten => _stde[x]te[n]-.,1,Goto(stdexten-NOANSWER,1)	; Treat anything else as no answer
+
+exten => a,1,VoiceMailMain(${mbx})			; If they press *, send the user into VoicemailMain
+exten => a,n,Return()
+
+[stdPrivacyexten]
+;
+; Standard extension subroutine:
+;   ${ARG1} - Extension
+;   ${ARG2} - Device(s) to ring
+;   ${ARG3} - Optional DONTCALL context name to jump to (assumes the s,1 extension-priority)
+;   ${ARG4} - Optional TORTURE context name to jump to (assumes the s,1 extension-priority)`
+;   ${ARG5} - Context in voicemail (if empty, then "default")
+;
+; See above note in stdexten about priority handling on exit.
+;
+exten => _X.,60000(stdPrivacyexten),NoOp(Start stdPrivacyexten)
+exten => _X.,n,Set(LOCAL(ext)=${ARG1})
+exten => _X.,n,Set(LOCAL(dev)=${ARG2})
+exten => _X.,n,Set(LOCAL(dontcntx)=${ARG3})
+exten => _X.,n,Set(LOCAL(tortcntx)=${ARG4})
+exten => _X.,n,Set(LOCAL(cntx)=${ARG5})
+
+exten => _X.,n,Set(LOCAL(mbx)="${ext}"$["${cntx}" ? "@${cntx}" :: ""])
+exten => _X.,n,Dial(${dev},20,p)			; Ring the interface, 20 seconds maximum, call screening
+						; option (or use P for databased call _X.creening)
+exten => _X.,n,Goto(stdexten-${DIALSTATUS},1)		; Jump based on status (NOANSWER,BUSY,CHANUNAVAIL,CONGESTION,ANSWER)
+
+exten => stdexten-NOANSWER,1,VoiceMail(${mbx},u)	; If unavailable, send to voicemail w/ unavail announce
+exten => stdexten-NOANSWER,n,NoOp(Finish stdPrivacyexten NOANSWER)
+exten => stdexten-NOANSWER,n,Return()			; If they press #, return to start
+
+exten => stdexten-BUSY,1,VoiceMail(${mbx},b)		; If busy, send to voicemail w/ busy announce
+exten => stdexten-BUSY,n,NoOp(Finish stdPrivacyexten BUSY)
+exten => stdexten-BUSY,n,Return()			; If they press #, return to start
+
+exten => stdexten-DONTCALL,1,Goto(${dontcntx},s,1)	; Callee chose to send this call to a polite "Don't call again" script.
+
+exten => stdexten-TORTURE,1,Goto(${tortcntx},s,1)	; Callee chose to send this call to a telemarketer torture script.
+
+exten => _stde[x]te[n]-.,1,Goto(stdexten-NOANSWER,1)	; Treat anything else as no answer
+
+exten => a,1,VoiceMailMain(${mbx})		; If they press *, send the user into VoicemailMain
+exten => a,n,Return()
+
+
+; Load Utilities
+#include <ext_utilities.conf>
+
+
+[macro-LBDial]
+exten => s,1,NoOp(Macro:LBDial)
+;exten => s,n,GotoIf($[${LEN(${BLINDTRANSFER})} = 0]?here)
+;exten => s,n,NoOp(BLINDTRANSFER=${BLINDTRANSFER})
+;exten => s,n,Set(STATION=${CUT(BLINDTRANSFER,,-1):4})
+;exten => s,n,NoOp(STATION=${STATION})
+;exten => s,n,SIPAddHeader(Diversion:  <sip:${STATION}@10.0.0.131>\;privacy=off\;reason=unconditional)
+;exten => s,n,Set(PJSIP_HEADER(add,P-Asserted-Identity)=sip:123456789@10.0.0.131)
+exten => s,n(here),Dial(PJSIP/${ARG1}@USLocLvl-USLLET4EBI1,${ARG2},${ARG3},${ARG4})
+;exten => s,n(here),Dial(SIP/${ARG1}@VerizonSBCaaS1,${ARG2},${ARG3},${ARG4})
+
+[catch-all]
+exten => _[+0-9].,1,Ringing()
+exten => _[+0-9].,n,Wait(1)
+exten => _[+0-9].,n,Answer()
+exten => _[+0-9].,n,Wait(1)
+exten => _[+0-9].,n,Playback(hello-world)
+exten => _[+0-9].,n,Wait(1)
+exten => _[+0-9].,n,echo()
+exten => _[+0-9].,n,Wait(1)
+exten => _[+0-9].,n,Hangup()
+
+[handler]
+;exten => addheader,1,Set(PJSIP_HEADER(add,Diversion)=<sip:7783090451@10.0.0.230>\;privacy=off\;reason=unconditional)
+exten => addheader,1,Set(PJSIP_HEADER(add,Diversion)=<sip:4384690257@10.0.0.230>\;privacy=off\;screen=no\;reason=unconditional)
+;exten => addheader,1,Set(REDIRECTING(from-num)=<7783090451>)
+
+[outbound]
+
+; Dialing 911
+exten => 911,1,NoOp(Outbound 911)
+ same => n,Dial(PJSIP/${EXTEN}@USLocLvl-USLLET4EBI1)
+ same => n,Congestion
+
+; N11 Digit Dialing NOT 911
+exten => _[2345678]11,1,NoOp(Outbound N11 Pattern WITHOUT 911)
+ same => n,Dial(PJSIP/${EXTEN}@USLocLvl-USLLET4EBI1)
+ same => n,Congestion
+
+exten => _X.,1,NoOP(Outbound all non-plus patterns)
+ same => n,Dial(PJSIP/${EXTEN}@USLocLvl-USLLET4EBI1)
+ same => n,Congestion
+
+exten => _+X.,1,NoOP(Outbound all plus patterns)
+ same => n,Dial(PJSIP/${EXTEN}@USLocLvl-USLLET4EBI1)
+ same => n,Congestion
+
+
+[from-verizon]
+;SG:  US LL ET4 SG1 Philidaphia PA
+;TN:  12677686852 - 12677686856,12677686778 STN
+
+;exten => +12677686852,1,GoSub(utilities,dtmf-test,1)
+
+include => sip-phones
+include => catch-all
+
+[from-phone]
+include => ecn-tests
+include => sip-phones
+include => outbound 
+include => catch-all
+
+[sip-phones]
+include => stdexten
+
+exten => +12677686852,1,GoSub(${EXTEN:2},stdexten(PJSIP/${EXTEN:2})) ; Matt Kalb's Softphone
+exten => +12677686853,1,GoSub(${EXTEN:2},stdexten(PJSIP/${EXTEN:2})) ; Chris Ramsayer's Softphone
+exten => +12677686854,1,GoSub(${EXTEN:2},stdexten(PJSIP/${EXTEN:2})) ; Kristie Litwin's Softphone
+exten => +12677686855,1,GoSub(${EXTEN:2},stdexten(PJSIP/${EXTEN:2})) ; David's Cellphone
+exten => +12677686855,1,GoSub(${EXTEN:2},stdexten(PJSIP/${EXTEN:2})) ; David's Cellphone
+exten => +12677686856,1,GoSub(${EXTEN:2},stdexten(PJSIP/${EXTEN:2})) ; David's Laptop
+
+
+[handler]
+exten => addBoth,1,NoOp(Set Both Diversion[${testDiversion}] Paid[${testPAID}])
+ same => n,GotoIf($[${testDiversion} = #]?skipDiversion)}
+ same => n,set(PJSIP_HEADER(add,Diversion)= sip:${testDiversion}@10.0.0.131>\;privacy=off\;reason=unconditional)
+ same => n(skipDiversion),NoOp()
+ same => n,GotoIf($["${testPAID}" = "#"]?skipPAID)}
+ same => n,Set(PJSIP_HEADER(add,P-Asserted-Identity)=sip:${testPAID}@10.0.0.131)
+ same => n(skipPAID),NoOp()
+ same => n,return()
+
+[ecn-tests]
+;exten => 100,1,GoSub(ecn-test,s,1(Title,To,From,Diversion,PAID,EBI)
+exten =>  96,1,GoSub(ecn-call,s,1(C96,7632301170,7635917714,+12677686778,,LLD,PAD))
+exten =>  97,1,GoSub(ecn-call,s,1(C97,7632301170,2677686855,777,111,LLD,PAD))
+exten =>  98,1,GoSub(ecn-call,s,1(C98,7632301170,2677686855,,,,PAD))
+exten =>  99,1,GoSub(ecn-call,s,1(C99,7632301170,2677686855,,,LLD))
+exten => 100,1,GoSub(ecn-call,s,1(C100,,,,,LLD))
+exten => 101,1,GoSub(ecn-call,s,1(C101,,,,,LLD))
+
+exten => _X.,1,NoOP(Outbound ECN Test ${CALLERID(all)})
+ same => n,set(CID=${CALLERID(name)})
+
+;Set EBI
+ same => n,set(testEBI=${CUT(CID,\,,1)})
+ same => n,set(testEBI=${IF($[ "${tstEBI}" = ""]?USLocLvl-USLLET4EBI1:${testEBI})})
+ same => n,set(testEBI=${IF($[ ${testEBI} = 1]?EBI1:${testEBI})})
+ same => n,set(testEBI=${IF($[ ${testEBI} = 2]?EBI2:${testEBI})})
+ same => n,set(testEBI=${IF($[ ${testEBI} = 3]?EBI3:${testEBI})})
+
+;Set the Diversion Header
+ same => n,set(testDiversion=${CUT(CID,\,,2)})
+ same => n,set(testDiversion=${IF($[ "${testDiversion}" = ""]?#:${testDiversion})})
+ same => n,set(testDiversion=${IF($[ ${testDiversion} = A]?Alien:${testDiversion})})
+ same => n,set(testDiversion=${IF($[ ${testDiversion} = S]?Subscriber:${testDiversion})})
+ same => n,set(testDiversion=${IF($[ ${testDiversion} = S2]?Subscriber2:${testDiversion})})
+ same => n,set(testDiversion=${IF($[ ${testDiversion} = U]?STN:${testDiversion})})
+ same => n,set(testDiversion=${IF($[ ${testDiversion} = TF]?TollFree:${testDiversion})})
+ same => n,set(__testDiversion=${testDiversion})
+
+;Set the PAID Header
+ same => n,set(testPAID=${CUT(CID,\,,3)})
+ same => n,set(testPAID=${IF($[ "${testPAID}" = ""]?#:${testPAID})})
+ same => n,set(testPAID=${IF($[ ${testPAID} = A]?Alien:${testPAID})})
+ same => n,set(testPAID=${IF($[ ${testPAID} = S]?Subscriber:${testPAID})})
+ same => n,set(testPAID=${IF($[ ${testPAID} = S2]?Subscriber2:${testPAID})})
+ same => n,set(testPAID=${IF($[ ${testPAID} = U]?STN:${testPAID})})
+ same => n,set(testPAID=${IF($[ ${testPAID} = TF]?TollFree:${testPAID})})
+ same => n,set(__testPAID=${testPAID})
+
+;Set the From Header
+ same => n,set(testFrom=${CUT(CID,\,,4)})
+ same => n,set(testFrom=${IF($[ "${testFrom}" = ""]?${CALLERID(num)}:${testFrom})})
+ same => n,set(testFrom=${IF($[ ${testFrom} = A]?Alien:${testFrom})})
+ same => n,set(testFrom=${IF($[ ${testFrom} = S]?Subscriber:${testFrom})})
+ same => n,set(testFrom=${IF($[ ${testFrom} = S2]?Subscriber2:${testFrom})})
+ same => n,set(testFrom=${IF($[ ${testFrom} = U]?STN:${testFrom})})
+ same => n,set(testFrom=${IF($[ ${testFrom} = TF]?TollFree:${testFrom})})
+
+ same => n,set(CALLERID(name)=ECNTest)
+ same => n,set(CALLERID(num)=${testFrom})
+
+ same => n,NoOp(VARS are PAID=[${testPAID}] DH=[${testDiversion}] EBI=[${testEBI}] FROM=[${testFrom}])
+ ;same => n,Dial(PJSIP/${EXTEN}@${testEBI})
+
+ same => n,Dial(PJSIP/${EXTEN}@${testEBI},,b(handler^addBoth^1))
+; same => n,Dial(PJSIP/${EXTEN}@CAEntLvl-CanadaEBI1,,b(handler^addBoth^1))
+ same => n,Congestion
+
+[ecn-call]
+exten => addHeaders,1,NoOp(Set Both Diversion[${Diversion}] Paid[${PAID}])
+ same => n,GotoIf($["${Diversion}" = ""]?skipDiversion)}
+ ;same => n,set(PJSIP_HEADER(add,Diversion)=<sip:${Diversion}@10.0.0.184>);\;privacy=off\;reason=unconditional)
+ ;same => n,set(PJSIP_HEADER(add,Diversion)=sip:${Diversion}@10.0.0.184);\;privacy=off\;reason=unconditional)
+ same => n,set(PJSIP_HEADER(add,Diversion)= <sip:${Diversion}@10.0.0.184>\;privacy=off\;screen=no\;reason=unconditional)
+ same => n(skipDiversion),NoOp()
+ same => n,GotoIf($["${PAID}" = ""]?skipPAID)}
+ same => n,Set(PJSIP_HEADER(add,P-Asserted-Identity)=<sip:${PAID}@10.0.0.131>)
+ same => n(skipPAID),NoOp()
+ same => n,return()
+
+exten => s,1,NoOp(ecn-call ([${ARG1}],[${ARG2}],[${ARG3}],[${ARG4}],[${ARG5}],[${ARG6}]))
+ same => n,Set(ARRAY(Title,To,From,Diversion,PAID,EBI)=${ARG1},${ARG2},${ARG3},${ARG4},${ARG5},${ARG6})
+ same => n,NoOp(ecn-call ([${Title}],[${To}],[${From}],[${Diversion}],[${PAID}],[${EBI}]))
+
+ ; Set Caller ID and From
+ same => n,Set(Title=${IF($[ "${Title}" = ""]?ECN Test(${EXTEN}):${Title})}) 
+ same => n,Set(Caller=${CALLERID(name)})
+ same => n,set(CALLERID(name)=${Title}-${Caller})
+ same => n,set(CALLERID(num)=${From})
+
+ ; Set correct EBI source, default to LLD
+ same => n,Set(EBI=${IF($[ "${EBI}" = ""]?LLD:${EBI})}) 
+ same => n,Set(EBI=${IF($[ ${EBI} = LLD]?USLocLvl-USLLET4EBI1:${EBI})}) 
+ same => n,Set(EBI=${IF($[ ${EBI} = LDO]?USLocLvl-USLLET4EBI1:${EBI})}) 
+
+ same => n,Set(__Diversion=${Diversion})
+ same => n,Set(__PAID=${PAID})
+
+ same => n,NoOp(ecn-call ([${Title}],[${To}],[${From}],[${Diversion}],[${PAID}],[${EBI}]))
+
+ same => n,Dial(PJSIP/${To}@${EBI},,b(addHeaders^1))
+ ;same => n,Congestion()
+
+

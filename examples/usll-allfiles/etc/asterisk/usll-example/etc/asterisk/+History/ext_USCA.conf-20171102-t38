@@ -1,0 +1,94 @@
+; ext_USCA.conf
+;
+; This is for enterprise Vz ATG Lab US CA Ent Lvl
+
+[USCA-outbound]
+; E.164 Digit Dialing
+exten => _+1NXXNXXXXXX,1,NoOp(Outbound E.164 Pattern)
+exten => _+1NXXNXXXXXX,n,Dial(PJSIP/${EXTEN}@USCAEntLvl-USCAELEBI1)
+exten => _+1NXXNXXXXXX,n,Congestion
+
+;;; Send anything we have to Verizon  all patterns
+;exten => _[+0-9].,1,NoOP(Outbound all patterns)
+;;exten => _[+0-9].,n,Set(CALLERID(num)=+16474750228)
+;exten => _[+0-9].,n,Macro(USCA-LBDial,${EXTEN})
+;exten => _[+0-9].,n,Congestion
+
+[USCA-from-verizon]
+include => USCA-sip-phones
+include => USCA-utilities
+include => catch-all
+
+[USCA-from-phone]
+include => USCA-sip-phones
+include => USCA-outbound
+include => catch-all
+
+[USCA-sip-phones]
+include => stdexten
+
+; US CA EL ET1 SG1 Cary NC
+exten => +19193798731,1,GoSub(${EXTEN:2},stdexten(PJSIP/${EXTEN:2}))
+exten => +19193798732,1,GoSub(${EXTEN:2},stdexten(PJSIP/${EXTEN:2}))
+
+; US CA EL ET1 SG2 Toronto CA
+exten => +16474750163,1,GoSub(${EXTEN:2},stdexten(PJSIP/${EXTEN:2}))
+exten => +16474750164,1,GoSub(${EXTEN:2},stdexten(PJSIP/${EXTEN:2}))
+
+; US CA EL ET1 SG3 Montreal CA
+exten => +14384690292,1,GoSub(${EXTEN:2},stdexten(PJSIP/${EXTEN:2}))
+exten => +14384690293,1,GoSub(${EXTEN:2},stdexten(PJSIP/${EXTEN:2}))
+
+[USCA-utilities]
+
+;;; SG:  US CA EL ET1 SG1 Cary NC ;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; (919)379-8728 Hello and Echo test
+exten => +19193798728,1,NoOp(Hello and Echo test)
+ same => n,Answer
+ same => n,Wait(1)
+ same => n,Playback(hello-world)
+ same => n,Echo
+ same => n,Playback(demo-echodone)
+ same => n,Hangup()
+
+;; (919)379-8730 Hello and Echo test
+exten => +19193798730,1,NoOP(RecieveFAX)
+;exten => +16474750162,1,NoOP(RecieveFAX)
+ same => n,Set(FAXOPT(ecm)=no)
+; same => n,Set(FAXOPT(gateway)=yes)
+; same => n,Set(FAXOPT(faxdetect)=t38)
+ same => n,Set(tempfax=${STRFTIME(,,%C%y%m%d%H%M)})
+ same => n,Answer
+ same => n,Wait(6)
+ same => n,ReceiveFAX(/tmp/${tempfax}.tiff,z)
+ same => n,Verbose(3,- Fax receipt completed with status:  ${FAXSTATUS})
+ same => n,GotoIf($["${FAXSTATUS}" == "FAILED"]?end)
+; same => n,AGI(sendfax.pl,${CALLERID(num)},USCAEntLvl-USCAELEBI1,${EXTEN:2},${tempfax})
+ same => n(end), NoOp(Finished with Faxing)
+
+;;; SG:  US CA EL ET1 SG2 Toronto CA ;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; (647)475-0160 Hello and Echo test
+exten => +16474750160,1,NoOp(Hello and Echo test)
+ same => n,Answer
+ same => n,Wait(1)
+ same => n,Playback(hello-world)
+ same => n,Echo
+ same => n,Playback(demo-echodone)
+ same => n,Hangup()
+
+;;; SG:  US CA EL ET1 SG3 Montreal CA ;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+[USCA-SendFax]
+;exten => sednfax,1,NoOP(SendFax)
+; same => n,Set(FAXOPT(ecm)=no)
+; same => n,ReceiveFAX(/tmp/${tempfax}.tiff,z)
+; same => n,Verbose(3,- Fax receipt completed with status:  ${FAXSTATUS})
+; same => n,GotoIf($["${FAXSTATUS}" == "FAILED"]?end)
+; same => n,AGI(sendfax.pl,${CALLERID(num)},USCAEntLvl-USCAELEBI1,${EXTEN:2},${tempfax})
+; same => n(end), NoOp(Finished with Faxing)
+

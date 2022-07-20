@@ -1,0 +1,60 @@
+;; pjsip.conf - Verizon configuraiton for Canada
+
+;;;;;;;;;;;;;;
+;;; Transport
+;;;;;;;;;;;;;;
+
+;; ENT:  VZ ATG US CA Ent Lvl
+;; EBI:  USCAELEBI1 
+[USCAELEBI1]
+type=transport
+protocol=udp
+bind=10.0.0.238
+
+;; ENT:  VZ ATG US CA Ent Lvl
+;; EBI:  USCAELEBI2 
+[USCAElEBI2]
+type=transport
+protocol=udp
+bind=10.0.0.239
+
+
+;;;;;;;;;;
+;;; AORS
+;;;;;;;;;;
+[VerizonIPT]
+type=aor
+contact=sip:166.60.1.246:5060
+contact=sip:166.60.1.246:5060
+
+;;; Endpoints
+[VerizonIPT]
+type=endpoint
+transport=USCAE1EBI1
+aors=VerizonsIPT
+disallow=all
+allow=g722,amrwb,ulaw,g729,alaw
+context=from-verizon
+
+[VerizonIPT]
+type=endpoint
+transport=USCAE1EBI2
+aors=VerizonsIPT
+disallow=all
+allow=g722,amrwb,ulaw,g729,alaw
+context=from-verizon
+
+
+;;;
+;;; SIP Phones
+;;;
+;[6001]
+;type=endpoint
+;transport=transport-udp
+;context=from-internal
+;disallow=all
+;allow=ulaw
+;allow=gsm
+;auth=6001
+;aors=6001
+

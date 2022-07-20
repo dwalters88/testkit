@@ -1,0 +1,51 @@
+#!/bin/bash
+#
+##cp /etc/asterisk/pjsip.conf /etc/asterisk/\+archive/pjsip.conf-`date +%G%m%dT%H%M%S`
+#cp /etc/asterisk/pjsip_wizard.conf /etc/asterisk/\+archive/pjsip_wizard.conf-`date +%G%m%dT%H%M%S`
+#cp /etc/asterisk/extensions.conf /etc/asterisk/\+archive/extensions.conf-`date +%G%m%dT%H%M%S`
+
+DIR=/etc/asterisk
+
+
+if ! cmp $DIR/pjsip.conf $DIR/+archive/pjsip.conf > /dev/null 2>&1
+then
+	DT=`date +%G%m%dT%H%M%S`
+	cp /etc/asterisk/pjsip.conf /etc/asterisk/\+archive/pjsip.conf-$DT
+	cp /etc/asterisk/pjsip.conf /etc/asterisk/\+archive/pjsip.conf
+fi
+
+if ! cmp $DIR/pjsip_wizard.conf $DIR/+archive/pjsip_wizard.conf > /dev/null 2>&1
+then
+	DT=`date +%G%m%dT%H%M%S`
+	cp /etc/asterisk/pjsip_wizard.conf /etc/asterisk/\+archive/pjsip_wizard.conf-$DT
+	cp /etc/asterisk/pjsip_wizard.conf /etc/asterisk/\+archive/pjsip_wizard.conf
+fi
+
+if ! cmp $DIR/extensions.conf $DIR/+archive/extensions.conf > /dev/null 2>&1
+then
+	DT=`date +%G%m%dT%H%M%S`
+	cp /etc/asterisk/extensions.conf /etc/asterisk/\+archive/extensions.conf-$DT
+	cp /etc/asterisk/extensions.conf /etc/asterisk/\+archive/extensions.conf
+fi
+
+if ! cmp $DIR/eutilities.conf $DIR/+archive/eutilities.conf > /dev/null 2>&1
+then
+	DT=`date +%G%m%dT%H%M%S`
+	cp /etc/asterisk/eutilities.conf /etc/asterisk/\+archive/eutilities.conf-$DT
+	cp /etc/asterisk/eutilities.conf /etc/asterisk/\+archive/eutilities.conf
+fi
+
+if ! cmp $DIR/modules.conf $DIR/+archive/modules.conf > /dev/null 2>&1
+then
+	DT=`date +%G%m%dT%H%M%S`
+	cp /etc/asterisk/modules.conf /etc/asterisk/\+archive/modules.conf-$DT
+	cp /etc/asterisk/modules.conf /etc/asterisk/\+archive/modules.conf
+fi
+
+if ! cmp $DIR/pjsip_wizard.conf $DIR/+archive/pjsip_wizard.conf > /dev/null 2>&1
+then
+	DT=`date +%G%m%dT%H%M%S`
+	cp /etc/asterisk/pjsip_wizard.conf /etc/asterisk/\+archive/pjsip_wizard.conf-$DT
+	cp /etc/asterisk/pjsip_wizard.conf /etc/asterisk/\+archive/pjsip_wizard.conf
+fi
+

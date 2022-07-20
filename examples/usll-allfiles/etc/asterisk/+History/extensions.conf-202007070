@@ -1,0 +1,368 @@
+; extensions.conf - the Asterisk dial plan
+;
+[general]
+static=yes
+writeprotect=no
+clearglobalvars=no
+[globals]
+
+[stdexten]
+;
+; Standard extension subroutine:
+;   ${EXTEN} - Extension
+;   ${ARG1} - Device(s) to ring
+;   ${ARG2} - Optional context in Voicemail
+;
+; Note that the current version will drop through to the next priority in the
+; case of their pressing '#'.  This gives more flexibility in what do to next:
+; you can prompt for a new extension, or drop the call, or send them to a
+; general delivery mailbox, or...
+;
+; The use of the LOCAL() function is purely for EBI.  Any variable
+; initially declared as LOCAL() will disappear when the innermost Gosub context
+; in which it was declared returns.  Note also that you can declare a LOCAL()
+; variable on top of an existing variable, and its value will revert to its
+; previous value (before being declared as LOCAL()) upon Return.
+;
+exten => _X.,50000(stdexten),NoOp(Start stdexten)
+exten => _X.,n,Set(LOCAL(ext)=${EXTEN})
+exten => _X.,n,Set(LOCAL(dev)=${ARG1})
+exten => _X.,n,Set(LOCAL(cntx)=${ARG2})
+exten => _X.,n,Set(LOCAL(mbx)=${ext}${IF($[!${ISNULL(${cntx})}]?@${cntx})})
+exten => _X.,n,Dial(${dev},20)				; Ring the interface, 20 seconds maximum
+exten => _X.,n,Goto(stdexten-${DIALSTATUS},1)		; Jump based on status (NOANSWER,BUSY,CHANUNAVAIL,CONGESTION,ANSWER)
+
+exten => stdexten-NOANSWER,1,VoiceMail(${mbx},u)	; If unavailable, send to voicemail w/ unavail announce
+exten => stdexten-NOANSWER,n,Return()			; If they press #, return to start
+
+exten => stdexten-BUSY,1,VoiceMail(${mbx},b)		; If busy, send to voicemail w/ busy announce
+exten => stdexten-BUSY,n,Return()			; If they press #, return to start
+
+exten => _stde[x]te[n]-.,1,Goto(stdexten-NOANSWER,1)	; Treat anything else as no answer
+
+exten => a,1,VoiceMailMain(${mbx})			; If they press *, send the user into VoicemailMain
+exten => a,n,Return()
+
+[stdPrivacyexten]
+;
+; Standard extension subroutine:
+;   ${ARG1} - Extension
+;   ${ARG2} - Device(s) to ring
+;   ${ARG3} - Optional DONTCALL context name to jump to (assumes the s,1 extension-priority)
+;   ${ARG4} - Optional TORTURE context name to jump to (assumes the s,1 extension-priority)`
+;   ${ARG5} - Context in voicemail (if empty, then "default")
+;
+; See above note in stdexten about priority handling on exit.
+;
+exten => _X.,60000(stdPrivacyexten),NoOp(Start stdPrivacyexten)
+exten => _X.,n,Set(LOCAL(ext)=${ARG1})
+exten => _X.,n,Set(LOCAL(dev)=${ARG2})
+exten => _X.,n,Set(LOCAL(dontcntx)=${ARG3})
+exten => _X.,n,Set(LOCAL(tortcntx)=${ARG4})
+exten => _X.,n,Set(LOCAL(cntx)=${ARG5})
+
+exten => _X.,n,Set(LOCAL(mbx)="${ext}"$["${cntx}" ? "@${cntx}" :: ""])
+exten => _X.,n,Dial(${dev},20,p)			; Ring the interface, 20 seconds maximum, call screening
+						; option (or use P for databased call _X.creening)
+exten => _X.,n,Goto(stdexten-${DIALSTATUS},1)		; Jump based on status (NOANSWER,BUSY,CHANUNAVAIL,CONGESTION,ANSWER)
+
+exten => stdexten-NOANSWER,1,VoiceMail(${mbx},u)	; If unavailable, send to voicemail w/ unavail announce
+exten => stdexten-NOANSWER,n,NoOp(Finish stdPrivacyexten NOANSWER)
+exten => stdexten-NOANSWER,n,Return()			; If they press #, return to start
+
+exten => stdexten-BUSY,1,VoiceMail(${mbx},b)		; If busy, send to voicemail w/ busy announce
+exten => stdexten-BUSY,n,NoOp(Finish stdPrivacyexten BUSY)
+exten => stdexten-BUSY,n,Return()			; If they press #, return to start
+
+exten => stdexten-DONTCALL,1,Goto(${dontcntx},s,1)	; Callee chose to send this call to a polite "Don't call again" script.
+
+exten => stdexten-TORTURE,1,Goto(${tortcntx},s,1)	; Callee chose to send this call to a telemarketer torture script.
+
+exten => _stde[x]te[n]-.,1,Goto(stdexten-NOANSWER,1)	; Treat anything else as no answer
+
+exten => a,1,VoiceMailMain(${mbx})		; If they press *, send the user into VoicemailMain
+exten => a,n,Return()
+
+
+; Load Utilities
+#include <ext_utilities.conf>
+
+
+[macro-LBDial]
+exten => s,1,NoOp(Macro:LBDial)
+;exten => s,n,GotoIf($[${LEN(${BLINDTRANSFER})} = 0]?here)
+;exten => s,n,NoOp(BLINDTRANSFER=${BLINDTRANSFER})
+;exten => s,n,Set(STATION=${CUT(BLINDTRANSFER,,-1):4})
+;exten => s,n,NoOp(STATION=${STATION})
+;exten => s,n,SIPAddHeader(Diversion:  <sip:${STATION}@10.0.0.131>\;privacy=off\;reason=unconditional)
+;exten => s,n,Set(PJSIP_HEADER(add,P-Asserted-Identity)=sip:123456789@10.0.0.131)
+exten => s,n(here),Dial(PJSIP/${ARG1}@USLocLvl-USLLET4EBI1,${ARG2},${ARG3},${ARG4})
+;exten => s,n(here),Dial(SIP/${ARG1}@VerizonSBCaaS1,${ARG2},${ARG3},${ARG4})
+
+[catch-all]
+exten => _[+0-9].,1,Ringing()
+exten => _[+0-9].,n,Wait(1)
+exten => _[+0-9].,n,Answer()
+exten => _[+0-9].,n,Wait(1)
+exten => _[+0-9].,n,Playback(hello-world)
+exten => _[+0-9].,n,Wait(1)
+exten => _[+0-9].,n,echo()
+exten => _[+0-9].,n,Wait(1)
+exten => _[+0-9].,n,Hangup()
+
+[outbound]
+
+; Dialing 911
+exten => 911,1,NoOp(Outbound 911)
+ same => n,Dial(PJSIP/${EXTEN}@USLocLvl-USLLET4EBI1)
+ same => n,Congestion
+
+; N11 Digit Dialing NOT 911
+exten => _[2345678]11,1,NoOp(Outbound N11 Pattern WITHOUT 911)
+ same => n,Dial(PJSIP/${EXTEN}@USLocLvl-USLLET4EBI1)
+ same => n,Congestion
+
+exten => _X.,1,NoOP(Outbound all non-plus patterns)
+ same => n,Dial(PJSIP/${EXTEN}@USLocLvl-USLLET4EBI1)
+ same => n,Congestion
+
+exten => _+X.,1,NoOP(Outbound all plus patterns)
+ same => n,Dial(PJSIP/${EXTEN}@USLocLvl-USLLET4EBI1)
+ same => n,Congestion
+
+
+[from-verizon]
+;If inbound to the test Launchpad
+exten => +12677686856,1,NoOp(Inbound Test selection)
+ same => n,Ringing()
+ same => n,Answer
+ same => n,Wait(1)
+
+ ;Validate Caller
+ same => n,NoOp(CALLERID(num) = ${CALLERID(num)}) 
+ same => n,GotoIf($["${CALLERID(num)}" = "+16123066440"]?validCaller)}; David Cell
+ same => n,GotoIf($["${CALLERID(num)}" = "+17038526073"]?validCaller)}; Kristie Desk
+ same => n,GotoIf($["${CALLERID(num)}" = "+16012590380"]?validCaller)}; Kristie Cell
+ same => n,GotoIf($["${CALLERID(num)}" = "+17038526073"]?validCaller)}; Chris Desk
+ same => n,GotoIf($["${CALLERID(num)}" = "+19192088695"]?validCaller)}; Chris Cell
+ same => n,GotoIf($["2" = "1"]?validCaller)}
+ same => n,Playback(beeperr)
+ same => n,Playback(beeperr)
+ same => n,Read(MyDigits,,0,n,,60)
+ same => n,GotoIf($["${MyDigits}" = "9459"]?validCaller)}
+ same => n,Playback(beeperr)
+ same => n,Playback(beeperr)
+ same => n,hangup()
+
+ same => n(validCaller),NoOp(Valid Caller)
+ same => n,Playback(beep)
+ same => n,Read(MyDigits,,0,n,,60)
+ same => n,SayAlpha(${MyDigits})
+ same => n,GoSub(ecn-tests,${MyDigits},1)
+ same => n,hangup()
+
+include => sip-phones
+include => catch-all
+
+[from-phone]
+include => ecn-adhoc
+include => ecn-tests
+include => sip-phones
+;include => outbound 
+include => catch-all
+
+[sip-phones]
+include => stdexten
+
+exten => +12677686852,1,GoSub(${EXTEN:2},stdexten(PJSIP/${EXTEN:2})) ; Matt Kalb's Softphone
+exten => +12677686853,1,GoSub(${EXTEN:2},stdexten(PJSIP/${EXTEN:2})) ; Chris Ramsayer's Softphone
+exten => +12677686854,1,GoSub(${EXTEN:2},stdexten(PJSIP/${EXTEN:2})) ; Kristie Litwin's Softphone
+exten => +12677686855,1,GoSub(${EXTEN:2},stdexten(PJSIP/${EXTEN:2})) ; David's Cellphone
+exten => +12677686856,1,GoSub(${EXTEN:2},stdexten(PJSIP/${EXTEN:2})) ; David's Laptop
+
+[handler]
+; Macro to set SIP Headers
+exten => addHeaders,1,NoOp(Set Both Diversion[${ARG1}] Paid[${ARG2}])
+ same => n,NoOP(PASS BY ARGUMENT ${ARG1} ${ARG2})
+ same => n,GotoIf($["${ARG1}" = ""]?skipDiversion)}
+ same => n,set(PJSIP_HEADER(add,Diversion)=<sip:${ARG1}@10.0.0.184>);\;privacy=off\;reason=unconditional)
+ same => n(skipDiversion),NoOp()
+ same => n,GotoIf($["${ARG2}" = ""]?skipPAID)}
+ same => n,Set(PJSIP_HEADER(add,P-Asserted-Identity)=<sip:${ARG2}@10.0.0.184>)
+ same => n(skipPAID),NoOp()
+ same => n,NoOp(CALLID = ${CHANNEL(pjsip,call-id)})
+ same => n,Set(CDR(callid)=${CHANNEL(pjsip,call-id)})
+ same => n,return()
+
+; Macro to make outbound call with a variety of SIP headers
+exten =>ecnOut,1,NoOp(ecnOut ([${ARG1}],[${ARG2}],[${ARG3}],[${ARG4}],[${ARG5}],[${ARG6}]))
+ same => n,Set(ARRAY(Title,To,From,Diversion,PAID,EBI)=${ARG1},${ARG2},${ARG3},${ARG4},${ARG5},${ARG6})
+ same => n,NoOp(ecnOur ([${Title}],[${To}],[${From}],[${Diversion}],[${PAID}],[${EBI}]))
+
+ ; Set Title
+ same => n,Set(Title=${IF($[ "${Title}" = ""]?#:${Title})}) 
+ same => n,Set(Title=${IF($[ "${Title}" = "#"]?ECN Test(${EXTEN}):${Title})}) 
+ same => n,Set(Caller=${CALLERID(name)})
+ same => n,set(CALLERID(name)=${Title}-${Caller})
+ same => n,set(CALLERID(num)=${From})
+
+ ; Set Diverison 
+; same => n,Set(Diversion=${IF($[ "${Diversion}" = ""]?#:${Diversion})}) 
+; same => n,Set(Diversion=${IF($[ "${Diversion}" = "#"]?ECN Test(${EXTEN}):${Diversion})}) 
+
+ ; Set PAID 
+; same => n,Set(PAID=${IF($[ "${PAID}" = ""]?#:${PAID})}) 
+; same => n,Set(PAID=${IF($[ "${PAID}" = "#"]?:${PAID})}) 
+
+ ; Set correct EBI source, default to LLD
+ same => n,Set(EBI=${IF($[ "${EBI}" = ""]?LLD:${EBI})}) 
+ same => n,Set(EBI=${IF($[ ${EBI} = LLD]?USLocLvl-USLLET4EBI1:${EBI})}) 
+ same => n,Set(EBI=${IF($[ ${EBI} = LDO]?USLocLvl-USLLET4EBI1:${EBI})}) 
+
+ ;Set global variables and make call
+ ;same => n,Set(__Diversion=${Diversion})
+ ;same => n,Set(__PAID=${PAID})
+ ;same => n,Set(CDR(userfield)=${CHANNEL(pjsip,call-id)})
+ ;same => n,Set(CDR(callid)=${CHANNEL(pjsip,call-id)})
+ same => n,NoOp(ecnOut ([${Title}],[${To}],[${From}],[${Diversion}],[${PAID}],[${EBI}]))
+ same => n,Dial(PJSIP/${To}@${EBI},,b(handler^addHeaders^1(${Diversion},${PAID})))
+
+[ecn-tests]
+;exten => 100,1,GoSub(ecn-test,s,1(Title,To,From,Diversion,PAID,EBI)
+exten =>  95,1,GoSub(handler,ecnOut,1(C127,7632301170,9193798130,9192306310,,LLD))
+exten =>  96,1,GoSub(handler,ecnOut,1(C96,7632301170,7635917714,+12677686778,,LLD,PAD))
+exten =>  97,1,GoSub(handler,ecnOut,1(C97,7632301170,2677686855,777,111,LLD,PAD))
+exten =>  98,1,GoSub(handler,ecnOut,1(C98,7632301170,2677686855,,,,PAD))
+exten =>  99,1,GoSub(handler,ecnOut,1(C99,7632301170,2677686855,,,LLD))
+exten => 100,1,GoSub(handler,ecnOut,1(C100,6018534373,6012590380,,,LLD))
+exten => 101,1,GoSub(handler,ecnOut,1(C101,9198517721,9193798130,,,LLD))
+exten => 102,1,GoSub(handler,ecnOut,1(C102,7038526073,6012590380,,,LLD))
+exten => 103,1,GoSub(handler,ecnOut,1(C103,7038526073,9193798130,,,LLD))
+exten => 104,1,GoSub(handler,ecnOut,1(C104,+33160306053,6012590380,,,LLD))
+exten => 105,1,GoSub(handler,ecnOut,1(C105,+33160306053,9193798130,,,LLD))
+exten => 106,1,GoSub(handler,ecnOut,1(C106,8777777176,6012590380,,,LLD))
+exten => 107,1,GoSub(handler,ecnOut,1(C107,8777777176,9193798130,,,LLD))
+exten => 108,1,GoSub(handler,ecnOut,1(C108,8777777176,8003435740,,,LLD))
+exten => 109,1,GoSub(handler,ecnOut,1(C109,8777777176,8003435740,,,LLD))
+exten => 117,1,GoSub(handler,ecnOut,1,(C117,9198517721,9193798130,2677686855,,LLD))
+exten => 118,1,GoSub(handler,ecnOut,1(C118,9198517721,6012590380,6012590380,,LLD))
+exten => 119,1,GoSub(handler,ecnOut,1(C119,9198517721,6012590380,9193798130,,LLD))
+exten => 120,1,GoSub(handler,ecnOut,1(C120,9198517721,9193798130,6012590380,,LLD))
+exten => 121,1,GoSub(handler,ecnOut,1(C121,9198517721,9193798130,,9192088695,LLD))
+exten => 122,1,GoSub(handler,ecnOut,1(C122,9198517721,6012590380,,9193798130,LLD))
+exten => 123,1,GoSub(handler,ecnOut,1(C123,9198517721,6012590380,,9192088695,LLD))
+exten => 124,1,GoSub(handler,ecnOut,1(C124,9198517721,6012590380,9192306310,9192088695,LLD))
+exten => 125,1,GoSub(handler,ecnOut,1(C125,9198517721,9193798130,9192306310,9192088695,LLD))
+exten => 126,1,GoSub(handler,ecnOut,1(C126,9198517721,6012590380,9192306310,,LLD))
+exten => 127,1,GoSub(handler,ecnOut,1(C127,9198517721,9193798130,9192306310,,LLD))
+exten => 128,1,GoSub(handler,ecnOut,1(C128,9725600403,9193798130,,,LLD))
+exten => 129,1,GoSub(handler,ecnOut,1(C129,9725600403,6012590380,,,LLD))
+exten => 130,1,GoSub(handler,ecnOut,1(C130,+4969222289610,9193798130,,,LLD))
+exten => 131,1,GoSub(handler,ecnOut,1(C131,+4969222289610,6012590380,,,LLD))
+exten => 132,1,GoSub(handler,ecnOut,1(C132,9725600403,6012590380,9192088695,,LLD))
+exten => 133,1,GoSub(handler,ecnOut,1(C133,9725600403,6012590380,9193798130,,LLD))
+exten => 134,1,GoSub(handler,ecnOut,1(C134,9725600403,6012590380,9192306310,,LLD))
+exten => 135,1,GoSub(handler,ecnOut,1(C135,9725600403,6012590380,,9193798130,LLD))
+exten => 136,1,GoSub(handler,ecnOut,1(C136,9725600403,9193798130,,9192088695,LLD))
+exten => 137,1,GoSub(handler,ecnOut,1(C137,7038526073,6012590380,,,LLD))
+exten => 138,1,GoSub(handler,ecnOut,1(C138,7038526073,6012590380,,,LLD))
+exten => 139,1,GoSub(handler,ecnOut,1(C139,411,6012590380,,,LLD))
+exten => 140,1,GoSub(handler,ecnOut,1(C140,411,9193798130,,,LLD))
+exten => 141,1,GoSub(handler,ecnOut,1(C141,711,6012590380,,,LLD))
+exten => 142,1,GoSub(handler,ecnOut,1(C142,711,9193798130,,,LLD))
+exten => 143,1,GoSub(handler,ecnOut,1(C143,711,6012590380,,,LLD))
+exten => 144,1,GoSub(handler,ecnOut,1(C144,711,9193798130,,,LLD))
+;exten => 145,1,GoSub(handler,ecnOut,1(C145,911,6012590380,,,LLD))
+;exten => 146,1,GoSub(handler,ecnOut,1(C146,911,9193798130,,,LLD))
+
+
+exten => 200,1,GoSub(handler,ecnOut,1(C200,6018534373,6012590380,,,LDO))
+exten => 201,1,GoSub(handler,ecnOut,1(C201,9198517721,9193798130,,,LDO))
+exten => 202,1,GoSub(handler,ecnOut,1(C202,7038526073,6012590380,,,LDO))
+exten => 203,1,GoSub(handler,ecnOut,1(C203,7038526073,9193798130,,,LDO))
+exten => 204,1,GoSub(handler,ecnOut,1(C204,+33160306053,6012590380,,,LDO))
+exten => 205,1,GoSub(handler,ecnOut,1(C205,+33160306053,9193798130,,,LDO))
+exten => 206,1,GoSub(handler,ecnOut,1(C206,8777777176,6012590380,,,LDO))
+exten => 207,1,GoSub(handler,ecnOut,1(C207,8777777176,9193798130,,,LDO))
+exten => 208,1,GoSub(handler,ecnOut,1(C208,8777777176,8003435740,,,LDO))
+exten => 209,1,GoSub(handler,ecnOut,1(C209,8777777176,8003435740,,,LDO))
+exten => 210,1,GoSub(handler,ecnOut,1(C210,9198517721,6012590380,9192088695,,LDO))
+exten => 211,1,GoSub(handler,ecnOut,1(C211,9198517721,6012590380,9193798130,,LDO))
+exten => 212,1,GoSub(handler,ecnOut,1(C212,9198517721,9193798130,9192088695,,LDO))
+exten => 213,1,GoSub(handler,ecnOut,1(C213,9198517721,9193798130,-,6012590380,LDO))
+exten => 214,1,GoSub(handler,ecnOut,1(C214,9198517721,6012590380,,9193798130,LDO))
+exten => 215,1,GoSub(handler,ecnOut,1(C215,9198517721,6012590380,,9192088695,LDO))
+exten => 216,1,GoSub(handler,ecnOut,1(C216,9198517721,6012590380,9192306310,9192088695,LDO))
+exten => 217,1,GoSub(handler,ecnOut,1(C217,9198517721,9193798130,9192306310,6012590380,LDO))
+exten => 218,1,GoSub(handler,ecnOut,1(C218,9198517721,6012590380,9192306310,,LDO))
+exten => 219,1,GoSub(handler,ecnOut,1(C219,9198517721,9193798130,9192306310,,LDO))
+exten => 220,1,GoSub(handler,ecnOut,1(C220,9725600403,9193798130,,,LDO))
+exten => 221,1,GoSub(handler,ecnOut,1(C221,9725600403,6012590380,,,LDO))
+exten => 222,1,GoSub(handler,ecnOut,1(C222,+4969222289610,9193798130,,,LDO))
+exten => 223,1,GoSub(handler,ecnOut,1(C223,+4969222289610,6012590380,,,LDO))
+exten => 224,1,GoSub(handler,ecnOut,1(C224,9725600403,6012590380,9192088695,,LDO))
+exten => 225,1,GoSub(handler,ecnOut,1(C225,9725600403,6012590380,9193798130,,LDO))
+exten => 226,1,GoSub(handler,ecnOut,1(C226,9725600403,6012590380,9192306310,,LDO))
+exten => 227,1,GoSub(handler,ecnOut,1(C227,9725600403,6012590380,,9193798130,LDO))
+exten => 228,1,GoSub(handler,ecnOut,1(C228,9725600403,9193798130,,9192088695,LDO))
+exten => 229,1,GoSub(handler,ecnOut,1(C229,7038526073,6012590380,,,LDO))
+exten => 230,1,GoSub(handler,ecnOut,1(C230,7038526073,6012590380,,,LDO))
+exten => 231,1,GoSub(handler,ecnOut,1(C231,411,6012590380,,,LDO))
+exten => 232,1,GoSub(handler,ecnOut,1(C232,411,9193798130,,,LDO))
+exten => 233,1,GoSub(handler,ecnOut,1(C233,711,6012590380,,,LDO))
+exten => 234,1,GoSub(handler,ecnOut,1(C234,711,9193798130,,,LDO))
+exten => 235,1,GoSub(handler,ecnOut,1(C235,711,6012590380,,,LDO))
+exten => 236,1,GoSub(handler,ecnOut,1(C236,711,9193798130,,,LDO))
+;exten => 237,1,GoSub(handler,ecnOut,1(C237,911,6012590380,,,LDO))
+;exten => 238,1,GoSub(handler,ecnOut,1(C238,911,9193798130,,,LDO))
+
+exten => _X.,1,NoOP(No test found)
+ same => n,Playback(beeperr)
+ same => n,Playback(beeperr)
+ same => n,Hangup()
+
+[ecn-adhoc]
+exten => _X.,1,NoOP(Ad-Hoc ECN Test from Softphone ${CALLERID(all)})
+ same => n,set(CID=${CALLERID(name)})
+
+;Set the Title
+ same => n,set(Title=${CUT(CID,\,,1)})
+ same => n,set(Title=${IF($[ "${Title}" = ""]?${CALLERID(name)}:${Title})})
+
+;Set the To Header
+ same => n,set(To=${CUT(CID,\,,2)})
+ same => n,set(To=${IF($[ "${To}" = ""]?${EXTEN}:${To})})
+ same => n,set(To=${IF($[ ${To} = D]?+17652301170:${To})})
+
+;Set the From Header
+ same => n,set(From=${CUT(CID,\,,3)})
+ same => n,set(From=${IF($[ "${From}" = ""]?${CALLERID(num)}:${From})})
+ same => n,set(From=${IF($[ ${From} = D]?+17652301170:${From})})
+
+;Set the Diversion Header
+ same => n,set(Diversion=${CUT(CID,\,,4)})
+ same => n,set(Diversion=${IF($[ "${Diversion}" = ""]?#:${Diversion})})
+ same => n,set(Diversion=${IF($[ ${Diversion} = D]?+17632301170:${Diversion})})
+
+;Set the PAID Header
+ same => n,set(PAID=${CUT(CID,\,,5)})
+ same => n,set(PAID=${IF($[ "${PAID}" = ""]?#:${PAID})})
+ same => n,set(PAID=${IF($[ ${PAID} = D]?+17632301170:${PAID})})
+
+;Set EBI
+ same => n,set(EBI=${CUT(CID,\,,6)})
+ same => n,set(EBI=${IF($[ "${tstEBI}" = ""]?"USLocLvl-USLLET4EBI1":${EBI})})
+ same => n,set(EBI=${IF($[ ${EBI} = LLD]?"USLocLvl-USLLET4EBI1":${EBI})})
+ same => n,set(EBI=${IF($[ ${EBI} = LDO]?"USLocLvl-USLLET4EBI1":${EBI})})
+
+ same => n,GoSub(handler,ecnOut,1(${Title},${To},${From},${Diversion},${PAID},${EBI}))
+
+; same => n,set(CALLERID(name)=ECNTest)
+; same => n,set(CALLERID(num)=${testFrom})
+;
+; same => n,NoOp(VARS are PAID=[${testPAID}] DH=[${testDiversion}] EBI=[${testEBI}] FROM=[${testFrom}])
+; ;same => n,Dial(PJSIP/${EXTEN}@${testEBI})
+;
+; same => n,Dial(PJSIP/${EXTEN}@${testEBI},,b(handler^addHeaders^1(${testDiversion},${testPAID})))
+;; same => n,Dial(PJSIP/${EXTEN}@CAEntLvl-CanadaEBI1,,b(handler^addBoth^1))
+; same => n,Congestion

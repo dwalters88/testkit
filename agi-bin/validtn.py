@@ -11,8 +11,9 @@ try:
 
     # Creating the DynamoDB Client
     dynamodb_client = boto3.client('dynamodb', region_name="us-east-2")
-except:
+except Exception as e:
    print ("SET VARIABLE VALIDTN \"Error\"")
+ #  print (e)
 
 try:
     response = dynamodb_client.get_item(
@@ -26,5 +27,6 @@ try:
     line = str(response['Item']['authorized']['BOOL'])
     print ("SET VARIABLE VALIDTN \"" + line + "\"")
 
-except:
+except Exception as e:
    print ("SET VARIABLE VALIDTN \"Not Found\"")
+ #  print (e)

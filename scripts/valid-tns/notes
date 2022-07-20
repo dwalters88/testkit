@@ -1,0 +1,6 @@
+need to add ago and speech modules
+need to add agi softlink
+need to add IAM role to server
+need to add boto3 to the library
+
+do not forget that you need to be Asterisk User or it will us the dwalter key instead

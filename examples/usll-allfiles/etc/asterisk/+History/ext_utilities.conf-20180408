@@ -1,0 +1,191 @@
+; ext_utilties.conf
+
+; cycle-test	- changes codecs cycling through each twice.
+; dtmf-test
+; echo-test
+; early-media
+; fast-answer-test
+; rna-test			- Ring No Answer test
+
+
+
+[utilities]
+
+exten => cycle-test,1,NoOp(cycle-test - Try each codec twice)
+ same => n,Answer()
+ same => n,Wait(6)
+ same => n,SayNumber(1),f)
+ same => n,Playback(hello-world)
+ same => n,Echo()
+
+ same => n,Set(PJSIP_MEDIA_OFFER(audio)=!all,ulaw)
+ same => n,Set(PJSIP_SEND_SESSION_REFRESH()=invite)
+ same => n,Wait(1)
+ same => n,SayNumber(2),m)
+ same => n,Playback(hello-world)
+ same => n,Echo()
+
+ same => n,Set(PJSIP_MEDIA_OFFER(audio)=!all,alaw)
+ same => n,Set(PJSIP_SEND_SESSION_REFRESH()=invite)
+ same => n,Wait(1)
+ same => n,SayNumber(3),f)
+ same => n,Playback(hello-world)
+ same => n,Echo()
+
+ same => n,Set(PJSIP_MEDIA_OFFER(audio)=!all,g729)
+ same => n,Set(PJSIP_SEND_SESSION_REFRESH()=invite)
+ same => n,Wait(1)
+ same => n,SayNumber(4),m)
+ same => n,Playback(hello-world)
+ same => n,Echo()
+
+ same => n,Set(PJSIP_MEDIA_OFFER(audio)=!all,ulaw)
+ same => n,Set(PJSIP_SEND_SESSION_REFRESH()=invite)
+ same => n,Wait(1)
+ same => n,SayNumber(5),f)
+ same => n,Playback(hello-world)
+ same => n,Echo()
+
+ same => n,Set(PJSIP_MEDIA_OFFER(audio)=!all,alaw)
+ same => n,Set(PJSIP_SEND_SESSION_REFRESH()=invite)
+ same => n,Wait(1)
+ same => n,SayNumber(6),m)
+ same => n,Playback(hello-world)
+ same => n,Echo()
+
+ same => n,Set(PJSIP_MEDIA_OFFER(audio)=!all,g729)
+ same => n,Set(PJSIP_SEND_SESSION_REFRESH()=invite)
+ same => n,Wait(1)
+ same => n,SayNumber(7),f)
+ same => n,Playback(hello-world)
+ same => n,Echo()
+
+ same => n,Hangup()
+
+; dtmf-test
+exten => dtmf-test,1,NoOp(dtmf-test)
+ same => n,Ringing()
+ same => n,Answer
+ same => n,Wait(1)
+ same => n,Playback(hello-world)
+ same => n,Read(MyDigits,,0,n,,60)
+ same => n,SayAlpha(${MyDigits})
+ same => n,Echo()
+ same => n,hangup()
+
+
+; echo-test
+exten => echo-test,1,NoOp(echo-test)
+ same => n,Ringing()
+ same => n,Wait(2)
+ same => n,Answer
+ same => n,Wait(1)
+ same => n,Playback(hello-world)
+ same => n,Echo
+ same => n,Playback(demo-echodone)
+ same => n,Hangup()
+
+;early-media
+exten => early-media-test,1,NoOp(early-media-test)
+ same => n,Progress()
+ same => n,Wait(5)
+ same => n,Playback(custom/early-media,noanswer)
+ same => n,Answer
+ same => n,Playback(custom/answer-echo-test)
+ same => n,Echo
+ same => n,Playback(demo-echodone)
+ same => n,Hangup()
+
+; fast-answer-test
+exten => fast-answer-test,1,NoOp(fast-answer-test - Answer without 18X)
+ same => n,Answer
+ same => n,Wait(1)
+ same => n,Playback(hello-world)
+ same => n,Echo
+ same => n,Playback(demo-echodone)
+ same => n,Hangup()
+
+; Reject Calls
+; --------------
+exten => **30403,1,GoSub(utilities,reject-403,1)
+exten => **30404,1,GoSub(utilities,reject-404,1)
+exten => **30408,1,GoSub(utilities,reject-408,1)
+exten => **30480,1,GoSub(utilities,reject-480,1)
+exten => **30484,1,GoSub(utilities,reject-484,1)
+exten => **30486,1,GoSub(utilities,reject-486,1)
+exten => **30488,1,GoSub(utilities,reject-488,1)
+exten => **30503,1,GoSub(utilities,reject-503,1)
+exten => **30603,1,GoSub(utilities,reject-603,1)
+exten => **30606,1,GoSub(utilities,reject-606,1)
+exten => _**30XXX,1,GoSub(utilities,reject-503,1)
+
+exten => reject-403,1,hangup(55) ; SIP 403 Forbidden
+exten => reject-404,1,hangup(3)  ; SIP 404 Not Found
+exten => reject-408,1,hangup(18) ; SIP 408 Request Timeout
+exten => reject-480,1,hangup(31) ; SIP 480 Temporaraly Unavailable
+exten => reject-484,1,hangup(28) ; SIP 484 Address Incomplete
+exten => reject-486,1,hangup(17) ; SIP 486 Busy Here
+exten => reject-488,1,hangup(70) ; SIP 488 Not Acceptable Here
+exten => reject-503,1,hangup(42) ; SIP 503 Service Unavailable
+exten => reject-603,1,hangup(21) ; SIP 603 Decline
+exten => reject-604,1,hangup(1)  ; SIP 604 Does not exist anywhwere
+
+
+; rna-test - Ring No Answer Test
+exten => rna-test,1,NoOp(rna-test - Ring No Answer)
+ same => n,Ringing
+ same => n,Wait(360)
+ same => n,Hangup
+
+
+;exten => **72,1,NoOp(Outbound with Diversion)
+; same => n,Set(CALLERID(all)=<sip:6123066440@10.0.0.238>)
+; same => n,Set(PJSIP_HEADER(add,Diversion)=<sip:6474750164@10.0.0.238>\;privacy=off\;screen=no\;reason=unconditional)
+; same => n,Dial(PJSIP/7635443885@USCAEntLvl-USCAELEBI1,,wW)
+; same => n,Congestion
+;
+;exten => **72,1,NoOp(Outbound with Diversion)
+; same => n,Set(CALLERID(all)=<sip:6123066440@10.0.0.238>)
+; same => n,Set(PJSIP_HEADER(add,Diversion)=<sip:6474750165@10.0.0.238>\;privacy=off\;screen=no\;reason=unconditional)
+; same => n,Dial(PJSIP/7635443885@USCAEntLvl-USCAELEBI1,,wW)
+; same => n,Congestion
+
+
+;; receive-fax
+;exten => receive-fax,1,NoOP(ReceiveFAX)
+; same => n,Set(FAXOPT(ecm)=no)
+;; same => n,Set(FAXOPT(gateway)=yes)
+;; same => n,Set(FAXOPT(faxdetect)=t38)
+; same => n,Set(tempfax=${STRFTIME(,,%C%y%m%d%H%M)})
+; same => n,Ringing()
+; same => n,Answer()
+; same => n,Wait(6)
+; same => n,ReceiveFAX(/tmp/${tempfax}.tiff,z)
+; same => n,Verbose(3,- Fax receipt completed with status:  ${FAXSTATUS})
+; same => n,GotoIf($["${FAXSTATUS}" == "FAILED"]?end)
+;; same => n,AGI(sendfax.pl,${CALLERID(num)},USCAEntLvl-USCAELEBI1,${EXTEN:2},${tempfax})
+; same => n(end), NoOp(Finished with Faxing)
+
+
+;; (919)379-8730 Hello and Echo test
+;;exten => +19193798730,1,NoOP(ReceiveFAX)
+;exten => +16474750162,1,NoOP(ReceiveFAX)
+; same => n,Set(FAXOPT(ecm)=no)
+;; same => n,Set(FAXOPT(gateway)=yes)
+;; same => n,Set(FAXOPT(faxdetect)=t38)
+; same => n,Set(tempfax=${STRFTIME(,,%C%y%m%d%H%M)})
+; same => n,Ringing()
+; same => n,Answer()
+; same => n,Wait(6)
+; same => n,ReceiveFAX(/tmp/${tempfax}.tiff,z)
+; same => n,Verbose(3,- Fax receipt completed with status:  ${FAXSTATUS})
+; same => n,GotoIf($["${FAXSTATUS}" == "FAILED"]?end)
+;; same => n,AGI(sendfax.pl,${CALLERID(num)},USCAEntLvl-USCAELEBI1,${EXTEN:2},${tempfax})
+; same => n(end), NoOp(Finished with Faxing)
+;
+;exten => send-t38-fax,1,NoOp(Send T38 Fax)
+; same => n,Answer()
+; same => n,Wait(6)
+; same => n,Set(FAXOPT(ecm)=no)
+; same => n,SendFax(/tmp/${tempfax}.tiff,dfzs)
+; same => n,Verbose(3,- Fax receipt completed with status:  ${FAXSTATUS})

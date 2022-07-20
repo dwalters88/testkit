@@ -1,0 +1,9 @@
+Channel:  PJSIP/7635917714@USCAEntLvl-USCAELEBI1
+CallerID: "FAX" <9193798728>
+WaitTime: 30
+Maxretries: 3
+RetryTime: 60
+Account:  1000
+Application: SendFax
+Data: /tmp/fax.tiff
+

@@ -1,0 +1,227 @@
+;; pjsip.conf - Verizon configuraiton for  US Loc Lvl
+
+[global]
+debug=yes
+
+;;;;;;;;;;;;;;;;;
+;;; Templates ;;;
+;;;;;;;;;;;;;;;;;
+[T-transport](!)
+tos=AF31
+cos=3
+allow_reload=yes
+
+[T-endpoint](!)
+tos_audio=EF
+cos_audio=5
+
+[T-codecs](!)
+disallow=all
+allow=g729,ulaw,alaw
+;allow=ulaw,alaw,g729
+;t38_udptl=no
+t38_udptl=yes 
+t38_udptl_maxdatagram=400
+;t38_udptl_ec=none
+;t38_udptl_nat=no
+;fax_detect=no 
+;fax_detect_timeout=30
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Phones Register here ;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Soft Phone Registration IP address
+[USLLPhones](T-transport)
+type=transport
+protocol=udp
+bind=10.0.0.185
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Verizon - Enterprise:  VZ ATG Lab US Loc Lvl ;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+[SonusEBI3](T-transport)
+type=transport
+protocol=udp
+bind=10.0.0.146
+
+[USLLET4EBI1](T-transport)
+type=transport
+protocol=udp
+bind=10.0.0.184
+
+[USLocLvl]
+type=aor
+contact=sip:172.31.148.107:5060  ; GNJSN1P8SBC07 (gn7g)
+contact=sip:172.31.155.107:5060  ; NORSN1P7SBC07 (no8g)
+
+;[USEntLvl-gn7g]
+;type=identify
+;endpoint=USEntLvl-USELFTET1EBI1
+;match=172.31.147.107  ; GNJSN1P7SBC07 (gn7g)
+;
+;[USEntLvl-no8g]
+;type=identify
+;endpoint=USEntLvl-USELFTET1EBI1
+;match=172.31.156.107  ; NORSN1P8SBC07 (no8g)
+
+;;;;;;;;;;;;;;;;;;;
+;; DBW 2018-02-28 Wrote custom module modificaiton
+;; res_pjsip_endpoint_identifier_ip.c
+;; Changed match_header to look for a host match when using the TO field. 
+;; this modification allows us to set specific Codec on EBIs, for Field Trial testing tools.
+;; identifty (now by EBI) -> Endpoint (with fixed codec lists)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+[USLocLvl-SonusEBI3]
+type=identify
+endpoint=USLocLvl-SonusEBI3
+match_header = To: 10.0.0.146
+
+[USLocLvl-USLLET4EBI1]
+type=identify
+endpoint=USLocLvl-USLLET4EBI1
+match_header = To: 10.0.0.184
+
+;;;;;;;;;;;;;
+;;; Endpoints
+;;;;;;;;;;;;;
+
+[USLocLvl-SonusEBI3](T-endpoint)
+type=endpoint
+transport=SonusEBI3
+aors=USLocLvl
+;media_address=10.0.0.146
+;bind_rtp_to_media_address=yes
+media_use_received_transport=yes
+disallow=all
+allow=ulaw,alaw,g729,g722
+context=from-verizon
+
+[USLocLvl-USLLET4EBI1](T-endpoint)
+type=endpoint
+transport=USLLET4EBI1
+aors=USLocLvl
+;media_address=10.0.0.184
+;bind_rtp_to_media_addres=yes
+media_use_received_transport=yes
+disallow=all
+;allow=ulaw
+;allow=alaw
+;allow=g729
+dtmf_mode=inband
+allow=ulaw,g729
+context=from-verizon
+
+
+;;;;;;;;;;;;;;;;
+;;; Phones
+;;;;;;;;;;;;;;;
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Verizon - Enterprise:  VZ ATG Lab US Loc Lvl ;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;; SG:  US LL ET1 SG1 Cary NC ;;;
+;;; TN:  919-379-8190 - 919-379-8209 + 919-230-6312 STN
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+[9193798200] ; Court's Laptop Softphone
+type=aor
+max_contacts=5
+
+[9193798200]
+type=auth
+auth_type=userpass
+password=17sch23pah
+username=9193798200
+
+[9193798200](T-endpoint)
+type=endpoint
+transport=USLLPhones
+aors=9193798200
+auth=9193798200
+disallow=all
+allow=ulaw
+direct_media=no
+rtp_symmetric=yes
+callerid=ATG Lab<9193798200>
+context=from-phone
+
+[9193798201] ; David's Laptop Softphone
+type=aor
+max_contacts=5
+
+[9193798201]
+type=auth
+auth_type=userpass
+password=17sch23pah
+username=9193798201
+
+[9193798201](T-endpoint)
+type=endpoint
+transport=USLLPhones
+aors=9193798201
+auth=9193798201
+disallow=all
+allow=ulaw
+direct_media=no
+rtp_symmetric=yes
+callerid=ATG Lab<9193798201>
+context=from-phone
+
+
+
+;;; SG:  US LL ET1 SG2 Cary NC ;;;
+;;; TNS:   919-379-8150 - 919-379-8169 + 919-230-6354 STN
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;; SG:  US LL ET4 SG1 Cary NC ;;;
+;;; TN:   ????? TBD  
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+[2677686856] ; David's Laptop Softphone
+type=aor
+max_contacts=5
+
+[2677686856]
+type=auth
+auth_type=userpass
+password=17sch23pah
+username=2677686856
+
+[2677686856](T-endpoint)
+type=endpoint
+transport=USLLPhones
+aors=2677686856
+auth=2677686856
+disallow=all
+;allow=ulaw
+allow=g729
+direct_media=no
+rtp_symmetric=yes
+callerid=ATG Lab<2677686856>
+context=from-phone
+
+[2677686855] ; David's Cellphone Softphone
+type=aor
+max_contacts=5
+
+[2677686855]
+type=auth
+auth_type=userpass
+password=demo
+;password=17sch23pah
+username=2677686855
+
+[2677686855](T-endpoint)
+type=endpoint
+transport=USLLPhones
+aors=2677686855
+auth=2677686855
+disallow=all
+allow=ulaw
+;allow=g729
+direct_media=no
+rtp_symmetric=yes
+;callerid=ATG Lab<2677686855>
+context=from-phone
